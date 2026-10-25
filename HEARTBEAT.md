@@ -8,3 +8,25 @@ On each heartbeat:
 4. Write a one-line update to `workspace/outbox/WATCH.md` and stamp `workspace/memory/last-scan.json`.
 5. If a messaging channel is connected and completeness changed, send a short notice: case id, completeness %, top missing item, handoff path.
 6. If nothing changed, only update the heartbeat stamp — do not spam.
+
+## Implementation
+
+This loop is implemented in `app/watcher.py` and started from the FastAPI
+app on startup when `SUPPORTFORGE_WATCH=1` is set:
+
+```bash
+SUPPORTFORGE_WATCH=1 SUPPORTFORGE_WATCH_INTERVAL=3 bash scripts/start-console.sh
+```
+
+- **Change detection** is a content signature (relative path + size + mtime per
+  evidence file), so it catches additions, edits, and removals even when a copy
+  preserves a backdated mtime — not a newest-mtime-only check.
+- **De-duplication** keys each WATCH line / channel notice on the observable
+  case state (`completeness:sorted(missing)`), so an unchanged rescan or a
+  restart stays silent while any real transition is surfaced exactly once.
+- **State** lives in `workspace/memory/last-scan.json` and survives restarts.
+- **Graceful degradation**: with no local model online it still audits and
+  refreshes the rule-layer handoff, marking the line `model offline`.
+- **Status** is exposed read-only at `GET /api/watch`.
+
+Verify with: `pytest tests/test_watcher.py -q`.
