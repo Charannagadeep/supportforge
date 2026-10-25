@@ -37,9 +37,9 @@ https://github.com/Charannagadeep/supportforge/blob/main/pitch/index.html
 
 ## Demo video URL
 
-https://github.com/Charannagadeep/supportforge/releases/latest/download/SupportForge-Demo.mp4
+https://github.com/Charannagadeep/supportforge/releases/download/hackathon-demo/SupportForge-Demo-2min.mp4
 
-_(Backup path in-repo: `demo/video/SupportForge-Demo-2min.mp4`)_
+_(Also in-repo: `demo/video/SupportForge-Demo-2min.mp4` — **1:58**, under the 2-minute limit.)_
 
 ---
 
@@ -130,7 +130,7 @@ Website walkthrough with cursor + voice: Reset → Audit → Inject → Investig
 |------|------------|
 | Repo | https://github.com/Charannagadeep/supportforge |
 | Pitch | https://github.com/Charannagadeep/supportforge/blob/main/pitch/index.html |
-| Demo video | https://github.com/Charannagadeep/supportforge/releases/latest/download/SupportForge-Demo.mp4 |
+| Demo video | https://github.com/Charannagadeep/supportforge/releases/download/hackathon-demo/SupportForge-Demo-2min.mp4 |
 | Security | `SECURITY.md` |
 | Benchmark | `BENCHMARK.md` |
 | GB10 bring-up | `scripts/gb10-bringup.sh` |

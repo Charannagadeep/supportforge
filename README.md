@@ -304,7 +304,7 @@ Paste-ready answers: **[`SUBMISSION.md`](SUBMISSION.md)**
 | Field | Value |
 |-------|--------|
 | Repo | https://github.com/Charannagadeep/supportforge |
-| Demo video (≤2 min) | [`demo/video/SupportForge-Demo-2min.mp4`](demo/video/SupportForge-Demo-2min.mp4) · [release download](https://github.com/Charannagadeep/supportforge/releases/latest/download/SupportForge-Demo.mp4) |
+| Demo video (≤2 min) | [`demo/video/SupportForge-Demo-2min.mp4`](demo/video/SupportForge-Demo-2min.mp4) · [release download](https://github.com/Charannagadeep/supportforge/releases/download/hackathon-demo/SupportForge-Demo-2min.mp4) |
 | Pitch | [`pitch/index.html`](pitch/index.html) |
 | Write-up | [`SUBMISSION.md`](SUBMISSION.md) |
 
