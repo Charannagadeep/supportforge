@@ -6,7 +6,7 @@ import re
 from typing import Any
 
 from . import engine, llm
-from .security import audit_security, redact_secrets
+from .security import allowed_case_path, allowed_output_path, audit_security, redact_secrets
 
 ALLOWED_ACTIONS = {
     "read_case",
@@ -18,7 +18,8 @@ ALLOWED_ACTIONS = {
     "inject_demo_evidence",
 }
 FORBIDDEN_ACTION_RE = re.compile(
-    r"\b(?:shell|subprocess|gpu\s+reset|kill\s+process|terminate\s+process|driver\s+change)\b|"
+    r"\b(?:shell|subprocess|kill\s+process|terminate\s+process|driver\s+change)\b|"
+    r"\b(?:gpu\s+reset|reset\s+(?:the\s+)?gpu)\b|"
     r"\bexec(?:ute)?\s+(?:a\s+)?(?:shell|command|bash|zsh)\b|"
     r"send\s+\S+\s+email|read\s+\S*\s*private",
     re.I,
@@ -224,19 +225,25 @@ def handle_message(message: str, actor: str = "console-local") -> dict[str, Any]
 
 
 def _file_snippets(case_id: str, audit: dict[str, Any], limit_per: int = 3500) -> dict[str, str]:
-    case = engine.CASES_DIR / case_id
     out: dict[str, str] = {}
     paths: list[str] = []
     for row in audit.get("evidence") or []:
         paths.extend(row.get("paths") or [])
-    # Always include description if present
     for extra in ("customer/description.md", "customer/steps-tried.md"):
-        if extra not in paths and (case / extra).exists():
-            paths.append(extra)
+        if extra not in paths:
+            try:
+                if allowed_case_path(case_id, extra).is_file():
+                    paths.append(extra)
+            except ValueError:
+                continue
     for rel in paths[:12]:
-        p = case / rel
+        try:
+            p = allowed_case_path(case_id, rel)
+        except ValueError:
+            audit_security("file_access", result="denied", path=rel, case_id=case_id)
+            continue
         if p.is_file():
-            out[rel] = p.read_text(errors="replace")[:limit_per]
+            out[rel] = redact_secrets(p.read_text(errors="replace")[:limit_per])
     return out
 
 
@@ -245,18 +252,17 @@ def _investigate(
 ) -> dict[str, Any]:
     snippets = _file_snippets(case_id, audit)
     result = llm.investigate_case(case_id, audit, snippets)
-    # Persist LLM narrative into outbox
-    path = engine.OUTBOX / f"{case_id}-llm-report.md"
+    path = allowed_output_path(case_id, "llm-report.md")
     header = (
         f"# LLM investigation — {case_id}\n\n"
         f"**Provider:** `{result.provider}` · **Model:** `{result.model}`\n\n"
         f"_Evidence completeness: {audit.get('completeness_percent')}%_\n\n---\n\n"
     )
     if extra_user:
-        header += f"_User ask:_ {extra_user}\n\n"
+        header += f"_User ask:_ {redact_secrets(extra_user)}\n\n"
     path.write_text(header + result.text + "\n")
-    # Append to handoff if complete
-    handoff = engine.OUTBOX / f"{case_id}-handoff.md"
+    audit_security("agent_tool", tool="save_handoff", case_id=case_id, artifact="llm-report.md")
+    handoff = allowed_output_path(case_id, "handoff.md")
     if handoff.exists() and audit.get("completeness_percent", 0) >= 80:
         existing = handoff.read_text()
         marker = "## Live model investigation"

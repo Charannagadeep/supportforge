@@ -9,7 +9,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from .security import audit_security, find_prompt_injection_markers
+from .security import allowed_case_path, allowed_output_path, audit_security, find_prompt_injection_markers
 
 ROOT = Path(__file__).resolve().parents[1]
 WORKSPACE = ROOT / "workspace"
@@ -233,15 +233,22 @@ def build_timeline(case: Path) -> list[TimelineEvent]:
 
 def build_hypotheses(case: Path, rows: list[EvidenceRow], events: list[TimelineEvent]) -> list[str]:
     hyps: list[str] = []
+    case_id = case.name
     log_text = ""
     for r in rows:
         if r.item == "primary_logs":
             for rel in r.paths:
-                log_text += (case / rel).read_text(errors="replace")
+                try:
+                    log_text += allowed_case_path(case_id, rel).read_text(errors="replace")
+                except ValueError:
+                    audit_security("file_access", result="denied", path=rel, case_id=case_id)
     smi_text = ""
     for r in rows:
         if r.item == "gpu_snapshot" and r.paths:
-            smi_text = (case / r.paths[0]).read_text(errors="replace")
+            try:
+                smi_text = allowed_case_path(case_id, r.paths[0]).read_text(errors="replace")
+            except ValueError:
+                audit_security("file_access", result="denied", path=r.paths[0], case_id=case_id)
 
     if "CUDA out of memory" in log_text or "OutOfMemoryError" in log_text:
         hyps.append(
@@ -293,7 +300,7 @@ def _write_requests(case_id: str, pct: int, missing: list[EvidenceRow]) -> Path:
             lines.append(f"- **{r.item}**: {labels.get(r.item, r.item)}")
     else:
         lines.append("All required evidence is present. No blocking customer asks.")
-    path = OUTBOX / f"{case_id}-requests.md"
+    path = allowed_output_path(case_id, "requests.md")
     path.write_text("\n".join(lines) + "\n")
     return path
 
@@ -304,7 +311,7 @@ def _write_timeline_md(case: Path, events: list[TimelineEvent]) -> Path:
         mark = "🔴" if e.severity == "error" else "•"
         lines.append(f"- {mark} **{e.time}** — {e.summary}")
         lines.append(f"  - cite: `{e.citation}`")
-    path = case / "timeline.md"
+    path = allowed_case_path(case.name, "timeline.md")
     path.write_text("\n".join(lines) + "\n")
     return path
 
@@ -321,16 +328,22 @@ def _write_handoff(
     security_flags: list[str],
 ) -> Path:
     desc = ""
-    desc_path = case / "customer" / "description.md"
-    if desc_path.exists():
-        desc = desc_path.read_text(errors="replace").strip().splitlines()
-        desc = " ".join(l for l in desc if l and not l.startswith("#"))[:280]
+    try:
+        desc_path = allowed_case_path(case_id, "customer/description.md")
+        if desc_path.exists():
+            desc = desc_path.read_text(errors="replace").strip().splitlines()
+            desc = " ".join(l for l in desc if l and not l.startswith("#"))[:280]
+    except ValueError:
+        pass
 
     env_block = "_Unknown — environment manifest missing._"
     for r in rows:
         if r.item == "environment_manifest" and r.paths:
-            raw = (case / r.paths[0]).read_text(errors="replace")
-            env_block = f"```\n{raw.strip()[:2000]}\n```"
+            try:
+                raw = allowed_case_path(case_id, r.paths[0]).read_text(errors="replace")
+                env_block = f"```\n{raw.strip()[:2000]}\n```"
+            except ValueError:
+                audit_security("file_access", result="denied", path=r.paths[0], case_id=case_id)
 
     table = "\n".join(
         f"| {r.item} | {r.status} | {', '.join(r.paths) or '—'} | {'yes' if r.required else 'no'} |"
@@ -411,7 +424,7 @@ SUPPORTFORGE_LLM_BASE=http://127.0.0.1:8000/v1 SUPPORTFORGE_MODEL=<served-model>
 ---
 *Private case data — processed locally. Live model narrative appends below when Investigate runs.*
 """
-    path = OUTBOX / f"{case_id}-handoff.md"
+    path = allowed_output_path(case_id, "handoff.md")
     path.write_text(body)
     return path
 
@@ -420,7 +433,10 @@ def read_outbox_file(case_id: str, kind: str) -> str:
     case_id = validate_case_id(case_id)
     if kind not in {"handoff", "requests"}:
         raise FileNotFoundError(kind)
-    path = OUTBOX / f"{case_id}-{kind}.md"
+    try:
+        path = allowed_output_path(case_id, f"{kind}.md")
+    except ValueError as e:
+        raise FileNotFoundError(str(e)) from e
     if not path.exists():
         raise FileNotFoundError(path.name)
     return path.read_text()

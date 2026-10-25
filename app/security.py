@@ -129,12 +129,15 @@ async def require_api_key(request: Request, x_api_key: str | None = Header(defau
     server when it is bound beyond localhost.
     """
     configured = os.getenv("SUPPORTFORGE_API_KEY", "").strip()
+    client = request.client.host if request.client else "unknown"
     if not configured:
         if _is_loopback(request):
             return
+        audit_security("api_key", actor=client, result="denied", reason="missing_key_non_loopback")
         raise HTTPException(status_code=401, detail="API key required for non-local access")
     supplied = x_api_key or ""
     if not hmac.compare_digest(hashlib.sha256(supplied.encode()).digest(), hashlib.sha256(configured.encode()).digest()):
+        audit_security("api_key", actor=client, result="denied", reason="invalid_or_missing_key")
         raise HTTPException(status_code=401, detail="Invalid or missing API key")
 
 

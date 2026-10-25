@@ -11,6 +11,8 @@ async function api(path, opts) {
   opts.headers = { ...(opts.headers || {}) };
   const key = window.localStorage.getItem("supportforge_api_key");
   if (key) opts.headers["x-api-key"] = key;
+  const user = window.localStorage.getItem("supportforge_user");
+  if (user) opts.headers["x-supportforge-user"] = user;
   const res = await fetch(path, {
     ...opts,
     signal: AbortSignal.timeout((opts && opts.timeout) || 180000),

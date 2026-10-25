@@ -14,7 +14,14 @@ from starlette.middleware.trustedhost import TrustedHostMiddleware
 from pydantic import BaseModel, Field
 
 from . import agent, engine, llm
-from .security import SecurityMiddleware, allowed_hosts, audit_security, authorize_user, require_api_key
+from .security import (
+    SecurityMiddleware,
+    allowed_hosts,
+    allowed_output_path,
+    audit_security,
+    authorize_user,
+    require_api_key,
+)
 
 STATIC = Path(__file__).parent / "static"
 
@@ -87,12 +94,15 @@ def case_detail(case_id: str) -> dict[str, Any]:
     files = sorted(
         str(p.relative_to(case)) for p in case.rglob("*") if p.is_file() and p.name != "audit.json"
     )
-    llm_report = engine.OUTBOX / f"{case_id}-llm-report.md"
+    try:
+        has_llm = allowed_output_path(case_id, "llm-report.md").exists()
+    except ValueError:
+        has_llm = False
     return {
         "id": case_id,
         "files": files,
         "audit": audit,
-        "has_llm_report": llm_report.exists(),
+        "has_llm_report": has_llm,
     }
 
 
@@ -149,9 +159,9 @@ def requests_md(case_id: str) -> PlainTextResponse:
 def llm_report(case_id: str) -> PlainTextResponse:
     try:
         case_id = engine.validate_case_id(case_id)
-    except FileNotFoundError as e:
+        path = allowed_output_path(case_id, "llm-report.md")
+    except (FileNotFoundError, ValueError) as e:
         raise HTTPException(404, str(e)) from e
-    path = engine.OUTBOX / f"{case_id}-llm-report.md"
     if not path.exists():
         raise HTTPException(404, "No LLM report yet — run Investigate")
     return PlainTextResponse(path.read_text())
