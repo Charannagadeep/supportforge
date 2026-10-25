@@ -389,8 +389,5 @@ wire();
 setArc(1);
 refreshHealth();
 loadCases();
-addBubble(
-  "agent",
-  "SupportForge Lab ready (laptop-only).\n5 live goldens · rule + LLM eval · security gate on.\nStart: Reset CASE-1042 → Inject → Investigate → Run live LLM eval."
-);
+addBubble("agent", "SupportForge ready. Select a case or ask the agent to investigate.");
 setInterval(refreshHealth, 8000);

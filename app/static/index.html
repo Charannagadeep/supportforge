@@ -18,7 +18,7 @@
       <div class="mark" aria-hidden="true"></div>
       <div>
         <h1>SupportForge</h1>
-        <p class="tag">Local evidence laboratory · measured investigation · laptop-first</p>
+        <p class="tag">Evidence audit · cited investigation · measured handoffs</p>
       </div>
     </div>
     <div class="top-actions">
@@ -54,14 +54,6 @@
         <button id="btn-refresh" class="btn tiny">Refresh</button>
       </div>
       <ul id="case-list"></ul>
-      <div class="demo-hint">
-        <strong>Judge arc (90s)</strong>
-        <ol>
-          <li>Pick CASE-1042 → Reset → Audit gaps</li>
-          <li>Inject → Investigate with model</li>
-          <li>Run live LLM eval across 5 goldens</li>
-        </ol>
-      </div>
     </aside>
 
     <section class="panel detail">
@@ -100,7 +92,7 @@
         <button class="tab" data-tab="requests">Requests</button>
         <button class="tab" data-tab="timeline">Timeline</button>
       </div>
-      <pre id="doc" class="doc">Run an investigation or the live eval suite. Scores write to workspace/outbox/eval-*.json.</pre>
+      <pre id="doc" class="doc">Select a case and run an audit or investigation.</pre>
       <div id="eval-board" class="eval-board hidden"></div>
       <div id="corpus-board" class="eval-board hidden"></div>
     </section>
@@ -109,7 +101,7 @@
   <section class="panel chat-panel">
     <div class="panel-h">
       <h2>Agent</h2>
-      <span class="tag" id="agent-tag">Local model preferred · security gate on</span>
+      <span class="tag" id="agent-tag">Waiting for model…</span>
     </div>
     <div id="chat-log" class="chat-log"></div>
     <form id="chat-form" class="chat-form">
@@ -129,8 +121,8 @@
   </section>
 
   <footer class="foot">
-    <span>No GB10 required · Ollama local · OpenShell/NemoClaw ready when available</span>
-    <span>Dell × NVIDIA · measured handoff quality</span>
+    <span>SupportForge</span>
+    <span>Dell × NVIDIA</span>
   </footer>
   <div id="toast" class="toast hidden"></div>
   <script src="/static/app.js"></script>
