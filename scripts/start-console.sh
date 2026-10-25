@@ -9,4 +9,4 @@ fi
 source .venv/bin/activate
 uv pip install -e . -q
 echo "SupportForge console → http://127.0.0.1:8787"
-exec python -m uvicorn app.main:app --host 0.0.0.0 --port 8787
+exec python -m uvicorn app.main:app --host "${SUPPORTFORGE_HOST:-127.0.0.1}" --port "${SUPPORTFORGE_PORT:-8787}"

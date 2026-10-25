@@ -9,12 +9,15 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from .security import audit_security, find_prompt_injection_markers
+
 ROOT = Path(__file__).resolve().parents[1]
 WORKSPACE = ROOT / "workspace"
 CASES_DIR = WORKSPACE / "cases"
 OUTBOX = WORKSPACE / "outbox"
 RUNBOOKS = WORKSPACE / "runbooks"
 DEMO_COMPLETE = ROOT / "cases"
+CASE_ID_RE = re.compile(r"^CASE-[0-9]+$")
 
 REQUIRED = [
     ("problem_statement", ["customer/description.md"]),
@@ -60,6 +63,13 @@ def ensure_layout() -> None:
         p.mkdir(parents=True, exist_ok=True)
 
 
+def validate_case_id(case_id: str) -> str:
+    """Allow only the repository's case identifier format before path joins."""
+    if not CASE_ID_RE.fullmatch(case_id or ""):
+        raise FileNotFoundError(f"Unknown case: {case_id}")
+    return case_id
+
+
 def list_cases() -> list[dict[str, Any]]:
     ensure_layout()
     cases = []
@@ -88,6 +98,7 @@ def _file_count(case: Path) -> int:
 
 def resolve_paths(case: Path, patterns: list[str]) -> list[Path]:
     found: list[Path] = []
+    case_root = case.resolve()
     for pat in patterns:
         if "*" in pat:
             found.extend(sorted(case.glob(pat)))
@@ -95,7 +106,15 @@ def resolve_paths(case: Path, patterns: list[str]) -> list[Path]:
             p = case / pat
             if p.exists():
                 found.append(p)
-    return [p for p in found if p.is_file() and p.stat().st_size > 0]
+    safe: list[Path] = []
+    for p in found:
+        resolved = p.resolve()
+        if resolved != case_root and case_root not in resolved.parents:
+            audit_security("file_access", result="denied", path=str(p.relative_to(case)))
+            continue
+        if resolved.is_file() and resolved.stat().st_size > 0:
+            safe.append(resolved)
+    return safe
 
 
 def score_status(paths: list[Path]) -> str:
@@ -108,9 +127,14 @@ def score_status(paths: list[Path]) -> str:
 
 def audit_case(case_id: str) -> dict[str, Any]:
     ensure_layout()
+    case_id = validate_case_id(case_id)
     case = CASES_DIR / case_id
     if not case.is_dir():
         raise FileNotFoundError(f"Unknown case: {case_id}")
+    case_root = CASES_DIR.resolve()
+    resolved_case = case.resolve()
+    if resolved_case != case_root and case_root not in resolved_case.parents:
+        raise FileNotFoundError(f"Case is outside approved workspace: {case_id}")
 
     rows: list[EvidenceRow] = []
     present = 0
@@ -142,6 +166,12 @@ def audit_case(case_id: str) -> dict[str, Any]:
     events = build_timeline(case)
     hypotheses = build_hypotheses(case, rows, events)
     runbook_hits = match_runbooks(case, events)
+    security_flags: list[str] = []
+    for evidence_file in case.rglob("*"):
+        if evidence_file.is_file() and evidence_file.name not in {"audit.json", "timeline.md"}:
+            if find_prompt_injection_markers(evidence_file.read_text(errors="replace")):
+                security_flags.extend(find_prompt_injection_markers(evidence_file.read_text(errors="replace")))
+    security_flags = sorted(set(security_flags))
 
     audit = {
         "case_id": case_id,
@@ -150,6 +180,7 @@ def audit_case(case_id: str) -> dict[str, Any]:
         "timeline": [asdict(e) for e in events],
         "hypotheses": hypotheses,
         "runbooks": runbook_hits,
+        "security_flags": security_flags,
         "updated": _now(),
     }
     (case / "audit.json").write_text(json.dumps(audit, indent=2) + "\n")
@@ -158,9 +189,16 @@ def audit_case(case_id: str) -> dict[str, Any]:
     _write_requests(case_id, pct, missing)
     if events:
         _write_timeline_md(case, events)
-    handoff_path = _write_handoff(case, case_id, pct, rows, events, hypotheses, runbook_hits, missing)
+    handoff_path = _write_handoff(case, case_id, pct, rows, events, hypotheses, runbook_hits, missing, security_flags)
     audit["handoff_path"] = str(handoff_path)
     audit["requests_path"] = str(OUTBOX / f"{case_id}-requests.md")
+    audit_security(
+        "case_audit",
+        actor="local-engine",
+        case_id=case_id,
+        completeness=pct,
+        security_flags=len(security_flags),
+    )
     return audit
 
 
@@ -278,6 +316,7 @@ def _write_handoff(
     hypotheses: list[str],
     runbooks: list[dict[str, str]],
     missing: list[EvidenceRow],
+    security_flags: list[str],
 ) -> Path:
     desc = ""
     desc_path = case / "customer" / "description.md"
@@ -335,6 +374,7 @@ def _write_handoff(
 - Required evidence completeness: **{pct}%**
 - Error/milestone events extracted: **{len(events)}**
 - Matched runbooks: {len(runbooks)}
+- Security review: {len(security_flags)} instruction-like marker(s) detected; evidence content was treated as untrusted data.
 
 ## Hypotheses (ranked, rule layer)
 
@@ -375,6 +415,9 @@ SUPPORTFORGE_LLM_BASE=http://127.0.0.1:8000/v1 SUPPORTFORGE_MODEL=<served-model>
 
 
 def read_outbox_file(case_id: str, kind: str) -> str:
+    case_id = validate_case_id(case_id)
+    if kind not in {"handoff", "requests"}:
+        raise FileNotFoundError(kind)
     path = OUTBOX / f"{case_id}-{kind}.md"
     if not path.exists():
         raise FileNotFoundError(path.name)
@@ -384,6 +427,7 @@ def read_outbox_file(case_id: str, kind: str) -> str:
 def reset_demo_case(case_id: str = "CASE-1042") -> dict[str, Any]:
     """Reset live case to incomplete pack for demo."""
     ensure_layout()
+    case_id = validate_case_id(case_id)
     src = DEMO_COMPLETE / case_id
     if not src.exists():
         raise FileNotFoundError(src)
@@ -400,6 +444,7 @@ def reset_demo_case(case_id: str = "CASE-1042") -> dict[str, Any]:
 def inject_complete_evidence(case_id: str = "CASE-1042") -> dict[str, Any]:
     """Copy missing evidence from *-complete pack into live case (demo step 2)."""
     ensure_layout()
+    case_id = validate_case_id(case_id)
     complete = DEMO_COMPLETE / f"{case_id}-complete"
     if not complete.exists():
         # fallback naming

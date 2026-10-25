@@ -85,6 +85,21 @@ source .venv/bin/activate
 uvicorn app.main:app --host 127.0.0.1 --port 8787
 ```
 
+### Security configuration
+
+The console binds to loopback by default. API routes accept local requests without a key for the laptop demo; non-loopback requests must provide `X-API-Key`. For a shared GB10 deployment, set a strong key and explicitly allow the host:
+
+```bash
+export SUPPORTFORGE_API_KEY='replace-with-a-long-random-secret'
+export SUPPORTFORGE_ALLOWED_HOSTS='gb10.example.internal,127.0.0.1'
+export SUPPORTFORGE_HOST='0.0.0.0'
+bash scripts/start-console.sh
+```
+
+The browser console can use a configured key stored in `localStorage` as `supportforge_api_key`. Do not put the key in source control or pass it in a URL. Optional browser origins can be allowlisted with `SUPPORTFORGE_CORS_ORIGINS`; CORS is disabled otherwise. Responses include defensive security headers, API bodies are limited to 1 MiB, and API requests are rate-limited per client.
+
+For the security MVP, the agent exposes only case listing, evidence reading/auditing, demo evidence injection, and handoff generation. It has no shell, process, GPU reset, driver-change, or arbitrary messaging tool. Evidence is treated as untrusted data; instruction-like log content is flagged and never executed. Generated security events are appended to `workspace/memory/security-audit.jsonl`. Configure `SUPPORTFORGE_ALLOWED_USERS`, `SUPPORTFORGE_ALLOWED_CHANNELS`, and `SUPPORTFORGE_ALLOWED_EXTERNAL_HOSTS` for shared deployments. External model assistance is disabled unless `SUPPORTFORGE_ALLOW_EXTERNAL_ASSIST=1` is explicitly set.
+
 ### Open the frontend
 
 In your browser go to:

@@ -10,4 +10,4 @@ source .venv/bin/activate
 uv pip install -e . -q
 pkill -f 'uvicorn app.main:app' 2>/dev/null || true
 sleep 0.5
-exec .venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8787
+exec .venv/bin/uvicorn app.main:app --host "${SUPPORTFORGE_HOST:-127.0.0.1}" --port "${SUPPORTFORGE_PORT:-8787}"

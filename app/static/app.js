@@ -1,6 +1,16 @@
 const state = { caseId: null, tab: "handoff", audit: null, arc: 1, busy: false };
 
+function esc(value) {
+  return String(value ?? "").replace(/[&<>\"']/g, (c) => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+  }[c]));
+}
+
 async function api(path, opts) {
+  opts = opts || {};
+  opts.headers = { ...(opts.headers || {}) };
+  const key = window.localStorage.getItem("supportforge_api_key");
+  if (key) opts.headers["x-api-key"] = key;
   const res = await fetch(path, {
     ...opts,
     signal: AbortSignal.timeout((opts && opts.timeout) || 180000),
@@ -66,8 +76,8 @@ async function loadCases() {
     const li = document.createElement("li");
     li.dataset.id = c.id;
     if (c.id === state.caseId) li.classList.add("active");
-    li.innerHTML = `<div class="id">${c.id}</div>
-      <div class="meta">${c.completeness == null ? "not audited" : c.completeness + "% complete"} · ${c.files} files</div>`;
+    li.innerHTML = `<div class="id">${esc(c.id)}</div>
+      <div class="meta">${esc(c.completeness == null ? "not audited" : c.completeness + "% complete")} · ${esc(c.files)} files</div>`;
     li.onclick = () => selectCase(c.id);
     ul.appendChild(li);
   });
@@ -99,7 +109,7 @@ async function selectCase(id) {
 
 function renderFiles(files) {
   const ul = $("files");
-  ul.innerHTML = files.map((f) => `<li>${f}</li>`).join("") || "<li class='empty'>No files</li>";
+  ul.innerHTML = files.map((f) => `<li>${esc(f)}</li>`).join("") || "<li class='empty'>No files</li>";
 }
 
 function renderAudit(audit) {
@@ -113,16 +123,16 @@ function renderAudit(audit) {
     .filter((e) => e.required)
     .map(
       (e) => `<tr>
-        <td>${e.item}</td>
-        <td><span class="badge ${e.status}">${e.status}</span></td>
-        <td>${(e.paths || []).join(", ") || "—"}</td>
+        <td>${esc(e.item)}</td>
+        <td><span class="badge ${esc(e.status)}">${esc(e.status)}</span></td>
+        <td>${esc((e.paths || []).join(", ") || "—")}</td>
       </tr>`
     )
     .join("");
   $("evidence").innerHTML = `<table class="evidence-table">
     <thead><tr><th>Item</th><th>Status</th><th>Path</th></tr></thead>
     <tbody>${rows}</tbody></table>`;
-  $("hypotheses").innerHTML = (audit.hypotheses || []).map((h) => `<li>${h}</li>`).join("");
+  $("hypotheses").innerHTML = (audit.hypotheses || []).map((h) => `<li>${esc(h)}</li>`).join("");
 }
 
 async function loadDoc() {

@@ -6,6 +6,10 @@ from pathlib import Path
 from typing import Any
 
 from . import engine, llm
+from .security import audit_security, network_destination_allowed, redact_secrets
+
+ALLOWED_ACTIONS = {"read_case", "audit_case", "save_handoff", "list_cases", "reset_demo", "inject_demo_evidence"}
+FORBIDDEN_ACTION_RE = re.compile(r"(?:shell|subprocess|exec|gpu reset|kill process|terminate process|driver change|send .*email|read .*private)", re.I)
 
 
 def _case_from_text(text: str, default: str | None = "CASE-1042") -> str | None:
@@ -18,15 +22,25 @@ def _case_from_text(text: str, default: str | None = "CASE-1042") -> str | None:
     return cases[0] if cases else None
 
 
-def handle_message(message: str) -> dict[str, Any]:
-    """Interpret a user message and run local tools + optional LLM."""
+def handle_message(message: str, actor: str = "console-local") -> dict[str, Any]:
+    """Interpret a user message and run local tools + optional local LLM."""
     engine.ensure_layout()
     text = (message or "").strip()
     low = text.lower()
     case_id = _case_from_text(text)
     provider = llm.detect_provider()
 
+    if FORBIDDEN_ACTION_RE.search(text):
+        audit_security("agent_tool", actor=actor, result="denied", tool="arbitrary_or_destructive_action")
+        return {
+            "reply": "Denied: SupportForge only reads approved case/runbook folders and writes audit/handoff state. Shell commands, GPU resets, process termination, driver changes, and external messaging are unavailable.",
+            "audit": None,
+            "case_id": case_id,
+        }
+
+    # Demo choreography
     if any(k in low for k in ("reset demo", "reset case", "start over", "incomplete")):
+        audit_security("agent_tool", actor=actor, tool="reset_demo")
         audit = engine.reset_demo_case("CASE-1042")
         return _pack(
             "Reset **CASE-1042** to the incomplete pack (serving log only).\n"
@@ -42,6 +56,7 @@ def handle_message(message: str) -> dict[str, Any]:
         )
 
     if any(k in low for k in ("inject", "add missing", "complete evidence", "new evidence")):
+        audit_security("agent_tool", actor=actor, tool="inject_demo_evidence")
         cid = case_id or "CASE-1042"
         audit = engine.inject_complete_evidence(cid)
         reply = (
@@ -93,6 +108,7 @@ def handle_message(message: str) -> dict[str, Any]:
                 "case_id": None,
                 "provider": provider,
             }
+        audit_security("agent_tool", actor=actor, tool="audit_case", case_id=case_id)
         audit = engine.audit_case(case_id)
         missing = [
             r["item"] for r in audit["evidence"] if r["required"] and r["status"] != "present"
@@ -123,6 +139,7 @@ def handle_message(message: str) -> dict[str, Any]:
         return _pack(body, audit, case_id, provider)
 
     if "list" in low and "case" in low:
+        audit_security("agent_tool", actor=actor, tool="list_cases")
         cases = engine.list_cases()
         lines = [
             f"- **{c['id']}** — {c['completeness'] if c['completeness'] is not None else '?'}% · {c['files']} files"
@@ -165,7 +182,7 @@ def handle_message(message: str) -> dict[str, Any]:
         audit = engine.audit_case(case_id)
         if provider.get("provider") not in ("none",):
             try:
-                inv = _investigate(case_id, audit, extra_user=text)
+                inv = _investigate(case_id, audit, extra_user=redact_secrets(text))
                 return _pack(inv["reply"], audit, case_id, provider, model_meta=inv.get("model_meta"))
             except Exception as e:  # noqa: BLE001
                 return _pack(
@@ -175,6 +192,8 @@ def handle_message(message: str) -> dict[str, Any]:
                     provider,
                 )
 
+    if os.environ.get("ANTHROPIC_API_KEY") and any(k in low for k in ("explain", "summarize in prose")):
+        audit_security("external_assist", actor=actor, result="denied", reason="disabled_by_default")
     return {
         "reply": (
             "Try:\n"
