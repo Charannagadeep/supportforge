@@ -27,6 +27,11 @@ SUPPORTFORGE_WATCH=1 SUPPORTFORGE_WATCH_INTERVAL=3 bash scripts/start-console.sh
 - **State** lives in `workspace/memory/last-scan.json` and survives restarts.
 - **Graceful degradation**: with no local model online it still audits and
   refreshes the rule-layer handoff, marking the line `model offline`.
+- **First discovery** audits and records state only; live-model refresh runs on
+  later completeness transitions (set `SUPPORTFORGE_WATCH_LLM=0` to keep the
+  loop rule-only).
 - **Status** is exposed read-only at `GET /api/watch`.
+- **Default off**: without `SUPPORTFORGE_WATCH=1` the console behaves exactly
+  as before (safe for demos).
 
 Verify with: `pytest tests/test_watcher.py -q`.

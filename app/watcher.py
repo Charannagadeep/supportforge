@@ -170,9 +170,16 @@ def process_case(case_id: str, prev: dict[str, Any] | None) -> dict[str, Any]:
         provider = llm.detect_provider()
         model_online = provider.get("provider") not in ("none",) and provider.get("status") != "no_models"
 
-        # Refresh the live-model narrative only when the picture meaningfully
-        # changed and a local model is actually reachable.
-        if (improved or flipped_to_missing) and model_online:
+        # Refresh the live-model narrative only on a *transition* from a known
+        # prior completeness — never on first discovery (that would fan out an
+        # LLM call across every case on cold start / test seed).
+        if (
+            prev_pct is not None
+            and (improved or flipped_to_missing)
+            and model_online
+            and os.getenv("SUPPORTFORGE_WATCH_LLM", "1").strip().lower()
+            not in ("0", "false", "no", "off")
+        ):
             try:
                 inv = agent._investigate(case_id, audit)  # noqa: SLF001 — internal reuse by design
                 meta = inv.get("model_meta") or {}
