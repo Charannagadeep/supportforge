@@ -137,38 +137,10 @@ curl -s http://127.0.0.1:8787/api/health | jq .
 
 Override: `SUPPORTFORGE_MODEL`, `SUPPORTFORGE_LLM_BASE`.
 
----
-
-## 5. Run the 90-second demo
-
-On the page:
-
-1. **Reset demo** → incomplete CASE-1042  
-2. **Run evidence audit** → ~**60%**, missing env + `nvidia-smi`  
-3. **Inject evidence** → **100%**, rule layer cites CUDA OOM + `train_scratch.py`  
-4. **Investigate with model** → live LLM report with citations (LLM report tab)  
-
-Agent chat examples:
-
-```text
-Reset demo
-Audit CASE-1042
-Inject missing evidence
-Investigate CASE-1042
-Model status
-```
-
-### CLI demo
-
-```bash
-bash scripts/demo-walkthrough.sh
-# with model:
-curl -s -X POST http://127.0.0.1:8787/api/cases/CASE-1042/investigate | jq -r .reply
-```
 
 ---
 
-## 6. Pitch deck (optional)
+## 5. Pitch deck (optional)
 
 ```bash
 open pitch/index.html        # macOS
@@ -304,7 +276,6 @@ Paste-ready answers: **[`SUBMISSION.md`](SUBMISSION.md)**
 | Field | Value |
 |-------|--------|
 | Repo | https://github.com/Charannagadeep/supportforge |
-| Demo video (≤2 min) | [`demo/video/SupportForge-Demo-2min.mp4`](demo/video/SupportForge-Demo-2min.mp4) · [release download](https://github.com/Charannagadeep/supportforge/releases/download/hackathon-demo/SupportForge-Demo-2min.mp4) |
 | Pitch | [`pitch/index.html`](pitch/index.html) |
 | Write-up | [`SUBMISSION.md`](SUBMISSION.md) |
 
