@@ -1,0 +1,23 @@
+Sat Oct 25 08:12:05 2026
++-----------------------------------------------------------------------------------------+
+| NVIDIA-SMI 580.82.07              Driver Version: 580.82.07      CUDA Version: 12.8     |
+|-----------------------------------------+------------------------+----------------------+
+| GPU  Name                 Persistence-M | Bus-Id          Disp.A | Volatile Uncorr. ECC |
+| Fan  Temp   Perf          Pwr:Usage/Cap |           Memory-Usage | GPU-Util  Compute M. |
+|                                         |                        |               MIG M. |
+|=========================================+========================+======================|
+|   0  NVIDIA GB10                    On  |   00000000:01:00.0 Off |                    0 |
+| N/A   54C    P0            92W /  N/A   |  112412MiB / 128628MiB |     37%      Default |
+|                                         |                        |                  N/A |
++-----------------------------------------+------------------------+----------------------+
+
++-----------------------------------------------------------------------------------------+
+| Processes:                                                                              |
+|  GPU   GI   CI        PID   Type   Process name                              GPU Memory |
+|        ID   ID                                                               Usage      |
+|=========================================================================================|
+|    0   N/A  N/A     15102      C   python train_scratch.py                      78420MiB |
+|    0   N/A  N/A     18422      C   vllm                                         33980MiB |
++-----------------------------------------------------------------------------------------+
+
+Note: capture taken ~3s before serving process exit. train_scratch.py is an abandoned interactive training job from a prior session.

@@ -1,0 +1,5 @@
+2026-10-24T22:01:11Z INFO train.start job=finetune-v3 world_size=1
+2026-10-24T22:01:18Z INFO train.data loaded 1.2M samples
+2026-10-24T22:18:44Z ERROR train.loop RuntimeError: CUDA error: an illegal memory access was encountered
+2026-10-24T22:18:44Z ERROR train.loop Killing process group after device-side assert
+2026-10-24T22:18:45Z INFO train.shutdown exit_code=1

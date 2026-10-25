@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+set -euo pipefail
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+cd "$ROOT"
+if [[ ! -d .venv ]]; then
+  uv venv .venv
+fi
+# shellcheck disable=SC1091
+source .venv/bin/activate
+uv pip install -e . -q
+pkill -f 'uvicorn app.main:app' 2>/dev/null || true
+sleep 0.5
+exec .venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8787

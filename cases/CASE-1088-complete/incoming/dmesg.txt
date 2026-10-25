@@ -1,0 +1,3 @@
+[12245.102211] NVRM: Xid (PCI:0000:17:00): 79, pid=22011, name=python, GPU has fallen off the bus.
+[12245.102298] NVRM: GPU at 0000:17:00.0 has reset
+[12245.110002] nvidia-modeset: ERROR: GPU:0: Failed to query display engine channel state

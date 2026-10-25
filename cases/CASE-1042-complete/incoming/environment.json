@@ -1,0 +1,18 @@
+{
+  "hostname": "lab-gb10-07.contoso.internal",
+  "product": "Dell Pro Max with GB10",
+  "os": "DGX OS (Ubuntu 24.04)",
+  "cpu": "NVIDIA Grace",
+  "gpu": "NVIDIA Blackwell GB10",
+  "unified_memory_gb": 128,
+  "driver": "580.xx (lab image)",
+  "cuda": "12.8",
+  "serving_stack": "vLLM OpenAI-compatible server",
+  "serving_version": "0.4.2",
+  "model": "org/contoso-reasoner-70b",
+  "quantization": "none (bf16)",
+  "gpu_memory_utilization": 0.95,
+  "max_model_len": 131072,
+  "max_num_seqs": 8,
+  "other_gpu_processes_reported_by_customer": "unknown at open time"
+}

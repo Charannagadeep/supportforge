@@ -1,0 +1,10 @@
+2026-10-25T08:11:02.101Z INFO  serving.start version=0.4.2 listen=0.0.0.0:8000
+2026-10-25T08:11:02.188Z INFO  serving.config model=org/contoso-reasoner-70b dtype=auto max_model_len=131072
+2026-10-25T08:11:02.190Z INFO  serving.config gpu_memory_utilization=0.95 max_num_seqs=8
+2026-10-25T08:11:03.004Z INFO  serving.engine loading weights ...
+2026-10-25T08:11:41.552Z INFO  serving.engine weights loaded in 38.5s
+2026-10-25T08:11:41.880Z INFO  serving.engine capturing cudagraphs ...
+2026-10-25T08:12:08.221Z ERROR serving.engine CUDA out of memory. Tried to allocate 3.62 GiB. GPU 0 has 2.11 GiB free. Process 18422 held 110.40 GiB before failure.
+2026-10-25T08:12:08.224Z ERROR serving.engine torch.cuda.OutOfMemoryError: CUDA out of memory
+2026-10-25T08:12:08.331Z INFO  serving.shutdown exit_code=1
+2026-10-25T08:12:08.332Z INFO  serving.hint Consider lowering gpu_memory_utilization, max_model_len, or max_num_seqs; verify no other GPU processes.

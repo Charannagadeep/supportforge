@@ -1,0 +1,9 @@
+{
+  "hostname": "train-a3-12.northwind.internal",
+  "os": "Ubuntu 22.04",
+  "gpu": "NVIDIA H100 80GB",
+  "driver": "550.54.15",
+  "cuda": "12.4",
+  "framework": "PyTorch 2.4.0+cu124",
+  "job": "finetune-v3"
+}

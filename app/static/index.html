@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>SupportForge — Local Case Investigation</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/static/styles.css" />
+</head>
+<body>
+  <div class="grid-bg"></div>
+  <header class="top">
+    <div class="brand">
+      <div class="mark"></div>
+      <div>
+        <h1>SupportForge</h1>
+        <p class="tag">Local evidence → engineering handoff · laptop mode</p>
+      </div>
+    </div>
+    <div class="top-actions">
+      <span id="health" class="pill">…</span>
+      <button id="btn-reset" class="btn ghost">Reset demo</button>
+      <button id="btn-inject" class="btn primary">Inject missing evidence</button>
+    </div>
+  </header>
+
+  <main class="layout">
+    <aside class="panel cases">
+      <div class="panel-h">
+        <h2>Cases</h2>
+        <button id="btn-refresh" class="btn tiny">Refresh</button>
+      </div>
+      <ul id="case-list"></ul>
+      <div class="demo-hint">
+        <strong>Demo arc</strong>
+        <ol>
+          <li>Select CASE-1042</li>
+          <li>Run audit → see gaps</li>
+          <li>Inject evidence</li>
+          <li>Read handoff citations</li>
+        </ol>
+      </div>
+    </aside>
+
+    <section class="panel detail">
+      <div class="panel-h">
+        <h2 id="case-title">Select a case</h2>
+        <button id="btn-audit" class="btn primary" disabled>Run evidence audit</button>
+      </div>
+      <div id="meter" class="meter hidden">
+        <div class="meter-bar"><span id="meter-fill"></span></div>
+        <div class="meter-meta"><span id="meter-pct">0%</span> completeness</div>
+      </div>
+      <div id="evidence" class="empty">No audit yet.</div>
+      <div class="split">
+        <div>
+          <h3>Hypotheses</h3>
+          <ol id="hypotheses" class="mono"></ol>
+        </div>
+        <div>
+          <h3>Files</h3>
+          <ul id="files" class="mono files"></ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel docs">
+      <div class="tabs">
+        <button class="tab active" data-tab="handoff">Handoff</button>
+        <button class="tab" data-tab="requests">Requests</button>
+        <button class="tab" data-tab="timeline">Timeline</button>
+      </div>
+      <pre id="doc" class="doc">Run an audit to generate the engineering package.</pre>
+    </section>
+  </main>
+
+  <section class="panel chat-panel">
+    <div class="panel-h">
+      <h2>Agent</h2>
+      <span class="tag">Runs on this Mac · no cloud required for demo</span>
+    </div>
+    <div id="chat-log" class="chat-log"></div>
+    <form id="chat-form" class="chat-form">
+      <input id="chat-input" type="text" autocomplete="off"
+        placeholder="Audit CASE-1042 and prepare the engineering handoff" />
+      <button class="btn primary" type="submit">Send</button>
+    </form>
+    <div class="chips">
+      <button type="button" class="chip" data-msg="Reset demo">Reset demo</button>
+      <button type="button" class="chip" data-msg="Audit CASE-1042 and prepare the engineering handoff">Audit CASE-1042</button>
+      <button type="button" class="chip" data-msg="Inject missing evidence">Inject evidence</button>
+      <button type="button" class="chip" data-msg="List cases">List cases</button>
+    </div>
+  </section>
+
+  <footer class="foot">
+    <span>Laptop demo now · NemoClaw/OpenClaw/OpenShell when GB10 available</span>
+    <span>Dell × NVIDIA hackathon</span>
+  </footer>
+  <script src="/static/app.js"></script>
+</body>
+</html>
