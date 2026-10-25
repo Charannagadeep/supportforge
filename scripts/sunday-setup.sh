@@ -1,9 +1,14 @@
 #!/usr/bin/env bash
-# Install SupportForge workspace into a NemoClaw/OpenClaw sandbox on the GB10.
+# Install SupportForge workspace into a NemoClaw/OpenClaw sandbox (GB10 or laptop).
+# Prefer the full OpenShell path: bash scripts/install-openshell.sh supportforge
 set -euo pipefail
 
 SANDBOX="${1:-my-assistant}"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+
+if [[ "${SANDBOX}" == "supportforge" ]] || command -v openshell >/dev/null 2>&1; then
+  exec bash "${ROOT}/scripts/install-openshell.sh" "${SANDBOX}"
+fi
 
 echo "== SupportForge → sandbox: $SANDBOX =="
 echo "Source: $ROOT"

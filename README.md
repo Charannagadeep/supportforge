@@ -2,7 +2,7 @@
 
 **Local evidence laboratory** for enterprise GPU / AI-server support — cited handoffs, live local LLM, **measured** quality.
 
-Dell × NVIDIA hackathon · **laptop-first (no GB10 required to demo or score)** · NemoClaw/OpenClaw/OpenShell when available.
+Dell × NVIDIA hackathon · **GB10-winning path** (Qwen3.6-35B NVFP4 + OpenShell) · laptop still works for practice.
 
 > Not a chatbot summary. A **checked, scored case package** with evidence audit, log-cited timeline, live investigation, and a reproducible eval harness.
 
@@ -250,17 +250,37 @@ Methodology: [`BENCHMARK.md`](BENCHMARK.md) · Security: [`SECURITY.md`](SECURIT
 
 ---
 
-## GB10 / NemoClaw (optional later)
+## GB10 bring-up (winning path — run ON the box)
 
-Only when you have a Dell Pro Max with GB10:
+Plug **NVIDIAHACK** USB (or rsync `~/Desktop/Nvidia`), then:
 
 ```bash
-curl -fsSL https://www.nvidia.com/nemoclaw.sh | bash   # Express Install = Y
-bash scripts/sunday-setup.sh my-assistant
-bash scripts/start-console.sh
+cd /path/to/supportforge   # or nvidia-hackathon/project
+bash scripts/gb10-bringup.sh supportforge
 ```
 
-Copy `skills/` + `workspace/` into the OpenClaw sandbox. Optional Slack/Telegram: see `CHANNELS.md`.
+That seeds HF cache with **Qwen3.6-35B-A3B-NVFP4**, wires OpenShell skills/cases, starts the console on `:8787` with an API key, and prefers vLLM on `:8000`.
+
+Manual pieces:
+
+```bash
+# Express Install once (Spark profile)
+curl -fsSL https://www.nvidia.com/nemoclaw.sh | bash   # Y = Express
+bash scripts/install-openshell.sh supportforge
+SUPPORTFORGE_RUNTIME=gb10 SUPPORTFORGE_API_KEY='…' bash scripts/start-console.sh
+nemoclaw launch supportforge
+```
+
+Judge arc: Reset → Audit (~60%) → Inject → **Investigate on 35B** → live LLM eval → shell denied → OpenShell isolation.
+
+## OpenShell / NemoClaw (laptop practice)
+
+```bash
+bash scripts/install-openshell.sh supportforge
+nemoclaw launch supportforge
+```
+
+Isolation: sandbox reaches local inference only; arbitrary public HTTPS is blocked. Skills: `evidence-audit`, `timeline-builder`, `escalation-handoff`. Channels: `CHANNELS.md`.
 
 ---
 
@@ -279,11 +299,16 @@ Copy `skills/` + `workspace/` into the OpenClaw sandbox. Optional Slack/Telegram
 
 ## Hackathon submit
 
-- Repo: this GitHub project  
-- Video ≤2 min — `demo/SCRIPT.md`  
-- Write-up — `SUBMISSION.md`  
-- Pitch — `pitch/index.html`  
-- Deadlines (PT): GB10 return **5:30** · submit **6:00** · deck **7:00** if Top 8  
+Paste-ready answers: **[`SUBMISSION.md`](SUBMISSION.md)**
+
+| Field | Value |
+|-------|--------|
+| Repo | https://github.com/Charannagadeep/supportforge |
+| Demo video (≤2 min) | [`demo/video/SupportForge-Demo-2min.mp4`](demo/video/SupportForge-Demo-2min.mp4) · [release download](https://github.com/Charannagadeep/supportforge/releases/latest/download/SupportForge-Demo.mp4) |
+| Pitch | [`pitch/index.html`](pitch/index.html) |
+| Write-up | [`SUBMISSION.md`](SUBMISSION.md) |
+
+Deadlines (PT): GB10 return **5:30** · submit **6:00** · deck **7:00** if Top 8
 
 ---
 

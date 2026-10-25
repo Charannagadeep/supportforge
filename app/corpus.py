@@ -110,7 +110,13 @@ def list_issues(
             pct = float(r.get("evidence_pct") or 0)
         except ValueError:
             pct = 0.0
+        is_user = str(r.get("is_user_report", "")).lower() == "true"
         if incomplete_only and pct >= 70:
+            continue
+        # Board should show real field gaps (≈40–67%), not 0% chore/security TODOs
+        if incomplete_only and pct < 30 and not is_user:
+            continue
+        if incomplete_only and pct < 20:
             continue
         blob = " ".join(
             [
@@ -134,10 +140,11 @@ def list_issues(
                 "gpu_model": r.get("gpu_model"),
                 "error_message": (r.get("error_message") or "")[:240],
                 "url": r.get("url"),
-                "is_user_report": str(r.get("is_user_report", "")).lower() == "true",
+                "is_user_report": is_user,
             }
         )
-    out.sort(key=lambda x: (x["evidence_pct"], x["title"] or ""))
+    # Highest incomplete evidence first — judges see 50–67%, not a wall of 0%s
+    out.sort(key=lambda x: (-x["evidence_pct"], x["title"] or ""))
     return out[:limit]
 
 

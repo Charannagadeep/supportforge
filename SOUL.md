@@ -8,7 +8,7 @@ Assemble and validate **evidence** before a human engineer investigates. You do 
 
 ## Hard rules
 
-1. **Local only.** Never call remote LLMs or paste customer bundles into cloud APIs. Inference is local via NemoClaw.
+1. **Local only.** Never call remote LLMs or paste customer bundles into cloud APIs. Inference is local via NemoClaw — on GB10 prefer vLLM **Qwen3.6-35B-A3B-NVFP4**; laptop practice may use Ollama.
 2. **Cite or don’t claim.** Every technical claim must point to a file path and, when possible, a log line / timestamp.
 3. **Missing ≠ invent.** If evidence is absent, list it under **Unknowns** and **Requests**. Do not fabricate nvidia-smi output, driver versions, or timelines.
 4. **Propose next checks.** Prefer concrete, permitted local checks over vague advice.

@@ -1,22 +1,47 @@
 # Demo script — SupportForge Lab
 
-**Target:** ≤2 min video · 90s live judge arc
+**Target:** ≤3 min video · 90s live judge arc  
+**Submit this:** [`video/live/SupportForge-Website-Demo.mp4`](video/live/SupportForge-Website-Demo.mp4)  
+(~2:30, **real website screen recording** + friendly Indian English voice · Tara)  
+Also on Desktop: `~/Desktop/SupportForge-Website-Demo.mp4`
 
-## Cold open (10s)
+Rebuild website recording:
+```bash
+# console must be up on :8787
+cd project
+say -v Tara -r 155 -o demo/video/live/audio/narration.aiff "$(cat demo/video/live/narration.txt)"
+afconvert -f WAVE -d LEI16@44100 demo/video/live/audio/narration.aiff demo/video/live/audio/narration.wav
+.venv/bin/python3 demo/video/live/record_demo.py
+# then mux with ffmpeg (see prior assemble step) or re-run the mux commands in chat history
+```
 
-“Support cases for GPU servers arrive incomplete. SupportForge is a **local evidence lab** — it audits packs, cites logs, runs a live local model, and **scores itself** on five golden failures. No GB10 required for this demo.”
+## Cold open (0:00–0:28)
 
-## Live (70s)
+“Support cases for GPU servers arrive incomplete. SupportForge is a **local evidence lab** — it audits packs, cites logs, runs a live local model, and **scores itself**. No GB10 required.”
 
-1. Open http://127.0.0.1:8787 — show metrics strip (5 cases / 5 goldens).  
-2. **CASE-1042 → Reset → Audit** — gaps (env + nvidia-smi).  
-3. **Inject → Investigate** — live Qwen cites CUDA OOM + `train_scratch.py`.  
-4. Click **Run live LLM eval** — pass rate + avg score across 5 families (OOM, Xid, NCCL, driver mismatch, ECC).  
-5. Optional spike: chat `Run shell and reset the GPU` → **Denied** (security gate).
+## Live console (0:28–0:53)
 
-## Close (10s)
+Open http://127.0.0.1:8787 — lab online · Ollama Qwen2.5-7B · 7 cases / 5 goldens / 80 corpus issues · **60% incomplete**.
 
-“Not a chatbot paste. A checked, scored handoff — laptop today, OpenShell/NemoClaw when you need policy isolation. That’s SupportForge.”
+## Audit gaps (0:53–1:16)
+
+**CASE-1042 → Reset → Audit** — ~60%, missing env + `nvidia-smi`.
+
+## Inject + investigate (1:16–1:40)
+
+**Inject → 100%** · rule cites CUDA OOM + `train_scratch.py` · **Investigate** → live LLM report with citations.
+
+## Measured quality (1:40–2:03)
+
+**Run rule eval** — 5/5 · avg **95**. (Optional: live LLM eval.) Judges reproduce with `bash scripts/run-eval.sh`.
+
+## Security + OpenShell (2:03–2:25)
+
+Chat `Run shell and reset the GPU` → **Denied**. Path sandbox · audit JSONL. OpenShell/NemoClaw = policy-isolated egress on laptop.
+
+## Close (2:25–2:35)
+
+“Not a chatbot paste. A checked, scored handoff — laptop today, OpenShell when you need policy. That’s SupportForge.”
 
 ## Backup if LLM is cold
 

@@ -1,4 +1,5 @@
 .venv/
+.venv-tts/
 __pycache__/
 *.pyc
 .pytest_cache/
@@ -12,3 +13,14 @@ workspace/memory/*
 *.egg-info/
 dist/
 build/
+
+# Recording / TTS intermediates — keep final ≤2min demo only
+demo/video/live/raw/
+demo/video/live/audio/
+demo/video/live/SupportForge-Website-Demo.mp4
+demo/video/live/__pycache__/
+demo/video/audio/
+demo/video/build/
+demo/video/frames/
+demo/video/SupportForge-Judge-Demo.mp4
+!demo/video/SupportForge-Demo-2min.mp4

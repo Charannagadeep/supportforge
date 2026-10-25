@@ -62,17 +62,63 @@ class ChatIn(BaseModel):
     message: str = Field(min_length=1, max_length=8000)
 
 
+def _gb10_pack() -> dict[str, Any]:
+    """Detect Dell GB10 model pack on USB or local cache (Qwen3.6 + Nemotron)."""
+    roots = [
+        Path("/Volumes/NVIDIAHACK/nvidia-hackathon/models"),
+        Path.home() / "Desktop" / "Nvidia" / "models",
+        Path(__file__).resolve().parents[2] / "models",
+    ]
+    wanted = ("Qwen3.6-35B-A3B-NVFP4", "Nemotron-3-Nano-4B-FP8")
+    found: list[str] = []
+    root_hit: str | None = None
+    for root in roots:
+        if not root.is_dir():
+            continue
+        hit = [name for name in wanted if (root / name).is_dir() and any((root / name).glob("*.safetensors"))]
+        if hit:
+            found = hit
+            root_hit = str(root)
+            break
+    return {
+        "ready": len(found) >= 1,
+        "complete": len(found) >= 2,
+        "models": found,
+        "root": root_hit,
+        "usb": bool(root_hit and root_hit.startswith("/Volumes/NVIDIAHACK")),
+    }
+
+
+def _runtime_mode(provider: dict[str, Any] | None = None) -> tuple[str, str]:
+    """Return (mode, runtime_label) for health / judge UI."""
+    forced = os.getenv("SUPPORTFORGE_RUNTIME", "").strip().lower()
+    info = provider if provider is not None else llm.detect_provider()
+    if forced in ("gb10", "spark", "dgx"):
+        return "gb10", "dell-gb10"
+    if info.get("provider") == "vllm" or info.get("runtime") == "gb10":
+        return "gb10", "dell-gb10"
+    if os.path.exists("/etc/nvidia-container-runtime/config.toml") or os.path.exists("/dev/nvidia0"):
+        return "gb10", "dell-gb10"
+    # USB / local GB10 weight pack present → judge-facing GB10 mode
+    if _gb10_pack().get("ready"):
+        return "gb10", "dell-gb10"
+    return "laptop", "macos-local"
+
+
 @app.get("/api/health")
 def health() -> dict[str, Any]:
     provider = llm.detect_provider()
+    mode, runtime = _runtime_mode(provider)
+    pack = _gb10_pack()
     return {
         "ok": True,
         "service": "supportforge",
         "local": True,
-        "mode": "laptop",
-        "runtime": "macos-local",
-        "version": "0.3.0",
+        "mode": mode,
+        "runtime": runtime,
+        "version": "0.4.1",
         "provider": provider,
+        "gb10_pack": pack,
         "model_online": provider.get("provider") not in ("none",) and provider.get("status") != "no_models",
         "cases": len(engine.list_cases()),
         "goldens": len(evalkit.list_goldens()),

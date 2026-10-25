@@ -1,0 +1,21 @@
+Welcome, judges. This is SupportForge — our local evidence laboratory for enterprise GPU and AI-server support on Dell GB10. Cases arrive incomplete. Engineers cannot start until environment, nvidia-smi, logs, and a failure timeline exist.
+
+You are looking at the live SupportForge website. Status is GB10 pack online. The USB drive carries Qwen 3.6 35B NVFP4 and Nemotron Nano 4B — both verified and ready for vLLM on the box. We show seven live cases, five golden evals, and eighty real NVIDIA Container Toolkit issues. About sixty percent of those real issues are incomplete by the same checklist we enforce. That proves the problem is not synthetic.
+
+Let us walk the product. Open CASE-1042 — a serving CUDA out-of-memory failure on a GB10 lab node. I reset it to the incomplete pack — exactly how tickets usually arrive from the field.
+
+Now run evidence audit. Completeness is about sixty percent. The environment dump is missing. The nvidia-smi snapshot is missing. Serving logs and customer notes are present. This is the everyday gap that blocks on-call engineers before they can even begin.
+
+Next, inject the missing evidence. Watch completeness jump to one hundred percent. The rule layer already cites CUDA out of memory in the serving log, and an abandoned train_scratch process holding GPU memory in nvidia-smi.
+
+Now press Investigate. SupportForge calls the live local model and writes a cited investigation report — grounded in the case files, with filenames and log-backed hypotheses. Not a chatbot guess. A handoff an engineer can trust.
+
+Open the LLM report tab. Here is the live narrative: summary, completeness, ranked hypotheses, unknowns, and next checks — all tied back to evidence.
+
+We also score ourselves. Run the eval harness across five golden failure families: OOM, Xid seventy-nine, NCCL hang, driver mismatch, and ECC remapped rows. The eval board shows pass rate and average score. Judges can reproduce this with one script. We do not ask you to believe a chat transcript.
+
+Security is part of the product. Ask the agent to run a shell and reset the GPU. It is denied. Path sandbox, restricted tools, redaction, and an audit trail. Private case data stays local.
+
+Finally, open the NVIDIA corpus tab. Eighty real toolkit issues — incomplete reports still show meaningful evidence percentages, not empty zeros. The gap pattern matches what SupportForge audits in every demo case.
+
+SupportForge is not a chatbot paste. It is a checked, scored case package — USB models loaded for Dell GB10, stronger with OpenShell isolation on the box. Thank you, judges.

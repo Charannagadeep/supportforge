@@ -77,7 +77,14 @@ async function refreshHealth() {
   try {
     const h = await api("/api/health", { timeout: 5000 });
     const el = $("health");
-    el.textContent = h.ok ? "lab · online" : "degraded";
+    const pack = h.gb10_pack || {};
+    if (!h.ok) {
+      el.textContent = "degraded";
+    } else if (h.mode === "gb10") {
+      el.textContent = pack.usb ? "GB10 · USB pack" : "GB10 · online";
+    } else {
+      el.textContent = "lab · online";
+    }
     el.classList.toggle("ok", !!h.ok);
     $("m-cases").textContent = String(h.cases ?? "—");
     $("m-goldens").textContent = String(h.goldens ?? "—");
@@ -86,7 +93,13 @@ async function refreshHealth() {
       h.corpus_incomplete_rate != null ? `${h.corpus_incomplete_rate}%` : "—";
     const p = h.provider || {};
     const mp = $("model-pill");
-    if (h.model_online) {
+    const packModels = (pack.models || []).join(" + ");
+    if (pack.ready && packModels) {
+      mp.textContent = `GB10 · ${packModels}`;
+      mp.classList.add("live");
+      const live = h.model_online ? `${p.provider}/${p.model}` : "waiting";
+      $("agent-tag").textContent = `GB10 pack ready · live ${live}`;
+    } else if (h.model_online) {
       mp.textContent = `${p.provider} · ${p.model}`;
       mp.classList.add("live");
       $("agent-tag").textContent = `Live model · ${p.provider} / ${p.model}`;
@@ -192,7 +205,7 @@ async function renderCorpusBoard() {
           <div class="title">${esc(i.category)}</div>
         </div>
         <div class="title">${esc(i.title)}<br/><span style="opacity:.7">${esc(i.error_message || i.missing_evidence || "")}</span></div>
-        <div class="score">${esc(i.evidence_pct)}%</div>
+        <div class="score">${esc(Math.round(i.evidence_pct))}%</div>
         <div class="title"><a href="${esc(i.url)}" target="_blank" rel="noopener" style="color:var(--accent)">GH</a></div>
       </div>`
       )
@@ -201,7 +214,7 @@ async function renderCorpusBoard() {
       <div class="empty" style="color:var(--ink)">${esc(stats.thesis)}</div>
       <div class="title" style="margin:8px 0">SupportForge checklist alignment (missing-field mentions)</div>
       <div class="chips" style="margin-bottom:10px">${gaps}</div>
-      <div class="title">Lowest-evidence open user reports</div>
+      <div class="title">Incomplete field reports (highest evidence first)</div>
       ${rows}`;
   } catch (e) {
     board.innerHTML = `<div class="empty">Corpus error: ${esc((e && e.message) || e)}</div>`;

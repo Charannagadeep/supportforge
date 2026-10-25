@@ -1,8 +1,8 @@
 """Model providers for SupportForge.
 
 Laptop default: Ollama (local).
-Optional: Anthropic API.
-GB10 later: OpenAI-compatible vLLM at localhost:8000.
+GB10 / Spark: OpenAI-compatible vLLM/NIM at localhost:8000 (Qwen3.6-35B-A3B-NVFP4).
+Optional: Anthropic API (opt-in only — never for scored runtime).
 """
 from __future__ import annotations
 
@@ -15,6 +15,15 @@ from typing import Any
 
 from .security import audit_security, network_destination_allowed, redact_secrets
 
+# Prefer Spark Express default, then other local NVIDIA serves.
+_VLLM_PREFERRED = (
+    "Qwen3.6-35B-A3B-NVFP4",
+    "qwen3.6-35b-a3b-nvfp4",
+    "nvidia/Qwen3.6-35B-A3B-NVFP4",
+    "Nemotron-3-Nano-4B-FP8",
+    "nemotron",
+)
+
 
 @dataclass
 class LLMResult:
@@ -23,8 +32,22 @@ class LLMResult:
     model: str
 
 
+def _pick_vllm_model(ids: list[str]) -> str:
+    env = os.environ.get("SUPPORTFORGE_MODEL", "").strip()
+    if env:
+        for i in ids:
+            if i == env or env in i or i in env:
+                return i
+        return env
+    for cand in _VLLM_PREFERRED:
+        for i in ids:
+            if cand.lower() in i.lower():
+                return i
+    return ids[0]
+
+
 def detect_provider() -> dict[str, str]:
-    """Pick the best available provider. Local Ollama/vLLM preferred; Anthropic opt-in only."""
+    """Pick the best available provider. Local vLLM/Ollama preferred; Anthropic opt-in only."""
     base = os.environ.get("SUPPORTFORGE_LLM_BASE", "http://127.0.0.1:11434/v1")
     model = os.environ.get("SUPPORTFORGE_MODEL", "qwen2.5:7b-instruct")
     # Anthropic only when explicitly enabled (never preferred over local).
@@ -38,19 +61,38 @@ def detect_provider() -> dict[str, str]:
             "model": os.environ.get("SUPPORTFORGE_MODEL", "claude-sonnet-4-20250514"),
             "base": "https://api.anthropic.com",
         }
-    # Prefer vLLM if present (GB10)
-    try:
-        with urllib.request.urlopen("http://127.0.0.1:8000/v1/models", timeout=0.4) as r:
-            data = json.loads(r.read().decode())
-            ids = [m.get("id") for m in data.get("data", []) if m.get("id")]
-            if ids:
-                return {
-                    "provider": "vllm",
-                    "model": os.environ.get("SUPPORTFORGE_MODEL", ids[0]),
-                    "base": "http://127.0.0.1:8000/v1",
-                }
-    except Exception:  # noqa: BLE001
-        pass
+    # Prefer vLLM / NIM if present (GB10 Express)
+    vllm_bases = []
+    env_base = os.environ.get("SUPPORTFORGE_LLM_BASE", "").strip()
+    if env_base and ":8000" in env_base:
+        vllm_bases.append(env_base.rstrip("/"))
+    vllm_bases.extend(["http://127.0.0.1:8000/v1", "http://127.0.0.1:8000"])
+    seen: set[str] = set()
+    for vb in vllm_bases:
+        key = vb.rstrip("/")
+        if key in seen:
+            continue
+        seen.add(key)
+        models_url = key if key.endswith("/models") else key.rstrip("/") + "/models"
+        if not models_url.endswith("/v1/models") and "/v1/" not in models_url:
+            # normalize bare :8000 → :8000/v1/models
+            if models_url.endswith("/models") and "/v1/" not in models_url:
+                models_url = models_url.replace("/models", "/v1/models")
+        try:
+            with urllib.request.urlopen(models_url, timeout=0.6) as r:
+                data = json.loads(r.read().decode())
+                ids = [m.get("id") for m in data.get("data", []) if m.get("id")]
+                if ids:
+                    chosen = _pick_vllm_model(ids)
+                    api_base = models_url.rsplit("/models", 1)[0]
+                    return {
+                        "provider": "vllm",
+                        "model": chosen,
+                        "base": api_base,
+                        "runtime": "gb10",
+                    }
+        except Exception:  # noqa: BLE001
+            continue
     # Probe Ollama
     try:
         with urllib.request.urlopen("http://127.0.0.1:11434/api/tags", timeout=0.6) as r:
