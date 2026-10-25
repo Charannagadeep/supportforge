@@ -15,7 +15,7 @@ from starlette.middleware.cors import CORSMiddleware
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 from pydantic import BaseModel, Field
 
-from . import agent, corpus, engine, eval as evalkit, llm
+from . import agent, corpus, engine, eval as evalkit, llm, watcher
 from .security import (
     SecurityMiddleware,
     allowed_hosts,
@@ -48,6 +48,14 @@ def _startup() -> None:
             shutil.copytree(src, dest)
             engine.audit_case(cid)
     engine.seed_all_demo_cases()
+    # Always-on agent: auto re-audit + refresh handoffs when case evidence
+    # changes. Opt-in via SUPPORTFORGE_WATCH=1 so tests stay deterministic.
+    watcher.start_background()
+
+
+@app.on_event("shutdown")
+def _shutdown() -> None:
+    watcher.stop_background()
 
 
 class ChatIn(BaseModel):
@@ -232,6 +240,23 @@ def corpus_issue(issue_number: str) -> dict[str, Any]:
     if not item:
         raise HTTPException(404, "issue not found in corpus")
     return item
+
+
+@app.get("/api/watch", dependencies=[Depends(require_api_key)])
+def watch_status() -> dict[str, Any]:
+    """Always-on agent status: whether the watcher runs and per-case state."""
+    state = watcher._load_state()  # read-only snapshot
+    log_tail = ""
+    if watcher.WATCH_LOG.exists():
+        lines = watcher.WATCH_LOG.read_text(errors="replace").splitlines()
+        log_tail = "\n".join(lines[-40:])
+    return {
+        "enabled": bool(watcher._THREAD and watcher._THREAD.is_alive()),
+        "interval_seconds": float(os.getenv("SUPPORTFORGE_WATCH_INTERVAL", "3")),
+        "last_scan": state.get("updated"),
+        "cases": state.get("cases", {}),
+        "watch_log_tail": log_tail,
+    }
 
 
 @app.get("/", response_class=HTMLResponse)
