@@ -174,3 +174,14 @@ h3 { font-size: 14px; color: var(--muted); margin-bottom: 6px; }
   display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap;
   padding: 12px 24px; border-top: 1px solid var(--line); color: var(--muted); font-size: 11px;
 }
+
+.tl-event { margin-bottom: 1rem; }
+.tl-time { opacity: 0.7; }
+.vbadge { margin-left: 0.5rem; font-size: 0.85em; }
+.cite { color: #7fd; cursor: pointer; }
+.cite-missing { opacity: 0.5; font-size: 0.85em; }
+.src-head { margin-bottom: 0.75rem; position: sticky; top: 0; background: #0b1117; padding: 0.25rem 0; }
+.src-line { font-family: monospace; white-space: pre-wrap; }
+.src-line.hit { background: #3a2f00; }
+.ln { color: #667; margin-right: 1em; user-select: none; }
+
