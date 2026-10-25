@@ -44,13 +44,17 @@ function setArc(n) {
 
 function renderEvalBoard(payload) {
   state.lastEval = payload;
-  $("m-pass").textContent = `${payload.pass_rate}%`;
-  $("m-avg").textContent = String(payload.avg_score);
-  $("m-mode").textContent = payload.mode;
+  const passEl = $("m-pass");
+  if (passEl) passEl.textContent = `${payload.pass_rate}%`;
   const board = $("eval-board");
+  const doc = $("doc");
+  const corpus = $("corpus-board");
+  if (corpus) corpus.classList.add("hidden");
+  if (doc) doc.classList.add("hidden");
   board.classList.remove("hidden");
-  $("doc").classList.add("hidden");
-  board.innerHTML = (payload.results || []).map((r) => `
+  const rows = (payload.results || [])
+    .map(
+      (r) => `
     <div class="eval-row ${r.passed ? "pass" : "fail"}">
       <div>
         <div class="id">${esc(r.case_id)}</div>
@@ -59,7 +63,14 @@ function renderEvalBoard(payload) {
       <div class="title">hyp ${esc(r.hypothesis_hits)}/${esc(r.hypothesis_needed)} · cite ${esc(r.citation_hits)}/${esc(r.citation_needed)} · ${esc(r.latency_ms)}ms · ${esc(r.mode)}</div>
       <div class="score">${esc(r.score)}</div>
       <div class="title">${r.passed ? "PASS" : "FAIL"}</div>
-    </div>`).join("");
+    </div>`
+    )
+    .join("");
+  board.innerHTML = `
+    <div class="empty" style="color:var(--ink)">
+      ${esc(payload.mode)} eval · pass ${esc(payload.pass_rate)}% · avg ${esc(payload.avg_score)} · ${esc(payload.passed)}/${esc(payload.cases)} cases
+    </div>
+    ${rows}`;
 }
 
 async function refreshHealth() {
