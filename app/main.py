@@ -18,7 +18,7 @@ from .security import SecurityMiddleware, allowed_hosts, audit_security, authori
 
 STATIC = Path(__file__).parent / "static"
 
-app = FastAPI(title="SupportForge", version="0.2.0")
+app = FastAPI(title="SupportForge", version="0.2.1")
 app.add_middleware(TrustedHostMiddleware, allowed_hosts=allowed_hosts())
 app.add_middleware(SecurityMiddleware)
 configured_origins = [o.strip() for o in os.getenv("SUPPORTFORGE_CORS_ORIGINS", "").split(",") if o.strip()]
@@ -45,9 +45,14 @@ def health() -> dict[str, Any]:
         "local": True,
         "mode": "laptop",
         "runtime": "macos-local",
-        "version": "0.2.0",
+        "version": "0.2.1",
         "provider": provider,
         "model_online": provider.get("provider") not in ("none",) and provider.get("status") != "no_models",
+        "security": {
+            "api_key_required": bool(os.getenv("SUPPORTFORGE_API_KEY", "").strip()),
+            "bind_default": "127.0.0.1",
+            "external_assist": os.getenv("SUPPORTFORGE_ALLOW_EXTERNAL_ASSIST") == "1",
+        },
     }
 
 
@@ -142,6 +147,10 @@ def requests_md(case_id: str) -> PlainTextResponse:
 
 @app.get("/api/cases/{case_id}/llm-report", dependencies=[Depends(require_api_key)])
 def llm_report(case_id: str) -> PlainTextResponse:
+    try:
+        case_id = engine.validate_case_id(case_id)
+    except FileNotFoundError as e:
+        raise HTTPException(404, str(e)) from e
     path = engine.OUTBOX / f"{case_id}-llm-report.md"
     if not path.exists():
         raise HTTPException(404, "No LLM report yet — run Investigate")
@@ -160,7 +169,9 @@ if STATIC.exists():
 def run() -> None:
     import uvicorn
 
-    uvicorn.run("app.main:app", host="0.0.0.0", port=8787, reload=False)
+    host = os.getenv("SUPPORTFORGE_HOST", "127.0.0.1")
+    port = int(os.getenv("SUPPORTFORGE_PORT", "8787"))
+    uvicorn.run("app.main:app", host=host, port=port, reload=False)
 
 
 if __name__ == "__main__":

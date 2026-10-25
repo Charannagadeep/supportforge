@@ -1,15 +1,28 @@
 """SupportForge agent — deterministic evidence + live LLM investigation."""
 from __future__ import annotations
 
+import os
 import re
-from pathlib import Path
 from typing import Any
 
 from . import engine, llm
-from .security import audit_security, network_destination_allowed, redact_secrets
+from .security import audit_security, redact_secrets
 
-ALLOWED_ACTIONS = {"read_case", "audit_case", "save_handoff", "list_cases", "reset_demo", "inject_demo_evidence"}
-FORBIDDEN_ACTION_RE = re.compile(r"(?:shell|subprocess|exec|gpu reset|kill process|terminate process|driver change|send .*email|read .*private)", re.I)
+ALLOWED_ACTIONS = {
+    "read_case",
+    "audit_case",
+    "investigate_case",
+    "save_handoff",
+    "list_cases",
+    "reset_demo",
+    "inject_demo_evidence",
+}
+FORBIDDEN_ACTION_RE = re.compile(
+    r"\b(?:shell|subprocess|gpu\s+reset|kill\s+process|terminate\s+process|driver\s+change)\b|"
+    r"\bexec(?:ute)?\s+(?:a\s+)?(?:shell|command|bash|zsh)\b|"
+    r"send\s+\S+\s+email|read\s+\S*\s*private",
+    re.I,
+)
 
 
 def _case_from_text(text: str, default: str | None = "CASE-1042") -> str | None:
@@ -86,6 +99,7 @@ def handle_message(message: str, actor: str = "console-local") -> dict[str, Any]
                 "case_id": None,
                 "provider": provider,
             }
+        audit_security("agent_tool", actor=actor, tool="investigate_case", case_id=case_id)
         audit = engine.audit_case(case_id)
         try:
             inv = _investigate(case_id, audit)

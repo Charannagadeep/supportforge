@@ -168,9 +168,11 @@ def audit_case(case_id: str) -> dict[str, Any]:
     runbook_hits = match_runbooks(case, events)
     security_flags: list[str] = []
     for evidence_file in case.rglob("*"):
-        if evidence_file.is_file() and evidence_file.name not in {"audit.json", "timeline.md"}:
-            if find_prompt_injection_markers(evidence_file.read_text(errors="replace")):
-                security_flags.extend(find_prompt_injection_markers(evidence_file.read_text(errors="replace")))
+        if not evidence_file.is_file() or evidence_file.name in {"audit.json", "timeline.md"}:
+            continue
+        markers = find_prompt_injection_markers(evidence_file.read_text(errors="replace"))
+        if markers:
+            security_flags.extend(markers)
     security_flags = sorted(set(security_flags))
 
     audit = {

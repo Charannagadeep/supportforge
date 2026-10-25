@@ -133,6 +133,13 @@ function renderAudit(audit) {
     <thead><tr><th>Item</th><th>Status</th><th>Path</th></tr></thead>
     <tbody>${rows}</tbody></table>`;
   $("hypotheses").innerHTML = (audit.hypotheses || []).map((h) => `<li>${esc(h)}</li>`).join("");
+  const flags = audit.security_flags || [];
+  if (flags.length) {
+    $("evidence").insertAdjacentHTML(
+      "beforeend",
+      `<div class="empty" style="color:var(--warn)">Security: ${esc(flags.join("; "))} (treated as untrusted data)</div>`
+    );
+  }
 }
 
 async function loadDoc() {
