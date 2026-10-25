@@ -1,0 +1,5 @@
+Sat Oct 26 17:01:10 2026
+NVIDIA-SMI 560.35.03    Driver Version: 560.35.03    CUDA Version: 12.6
+| GPU  Name | Temp | Pwr | Mem-Usage | Volatile Uncorr. ECC | Remapped Rows |
+| 0 H100    | 71C  | 312W| 61200MiB  |                   14 |            8 |
+Processes: trtllm-serve PID 4402 using 61088MiB

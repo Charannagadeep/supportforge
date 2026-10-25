@@ -1,0 +1,12 @@
+{
+  "case_id": "CASE-1088",
+  "title": "Training fault with Xid 79",
+  "family": "hardware",
+  "required_hypothesis_terms": [
+    ["xid", "fallen off the bus", "gpu/driver"]
+  ],
+  "required_citation_substrings": ["dmesg", "train.log"],
+  "must_not_claim": ["train_scratch", "nccl timeout"],
+  "expected_completeness_complete": 100,
+  "severity": "P0"
+}

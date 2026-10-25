@@ -1,4 +1,4 @@
-const state = { caseId: null, tab: "handoff", audit: null, arc: 1, busy: false };
+const state = { caseId: null, tab: "handoff", audit: null, arc: 1, busy: false, lastEval: null };
 
 function esc(value) {
   return String(value ?? "").replace(/[&<>\"']/g, (c) => ({
@@ -42,31 +42,47 @@ function setArc(n) {
   });
 }
 
+function renderEvalBoard(payload) {
+  state.lastEval = payload;
+  $("m-pass").textContent = `${payload.pass_rate}%`;
+  $("m-avg").textContent = String(payload.avg_score);
+  $("m-mode").textContent = payload.mode;
+  const board = $("eval-board");
+  board.classList.remove("hidden");
+  $("doc").classList.add("hidden");
+  board.innerHTML = (payload.results || []).map((r) => `
+    <div class="eval-row ${r.passed ? "pass" : "fail"}">
+      <div>
+        <div class="id">${esc(r.case_id)}</div>
+        <div class="title">${esc(r.title)}</div>
+      </div>
+      <div class="title">hyp ${esc(r.hypothesis_hits)}/${esc(r.hypothesis_needed)} · cite ${esc(r.citation_hits)}/${esc(r.citation_needed)} · ${esc(r.latency_ms)}ms · ${esc(r.mode)}</div>
+      <div class="score">${esc(r.score)}</div>
+      <div class="title">${r.passed ? "PASS" : "FAIL"}</div>
+    </div>`).join("");
+}
+
 async function refreshHealth() {
   try {
     const h = await api("/api/health", { timeout: 5000 });
     const el = $("health");
-    el.textContent = h.ok ? "console · online" : "degraded";
+    el.textContent = h.ok ? "lab · online" : "degraded";
     el.classList.toggle("ok", !!h.ok);
+    $("m-cases").textContent = String(h.cases ?? "—");
+    $("m-goldens").textContent = String(h.goldens ?? "—");
     const p = h.provider || {};
     const mp = $("model-pill");
     if (h.model_online) {
       mp.textContent = `${p.provider} · ${p.model}`;
       mp.classList.add("live");
       $("agent-tag").textContent = `Live model · ${p.provider} / ${p.model}`;
-    } else if (p.provider === "ollama" && p.status === "no_models") {
-      mp.textContent = "ollama · pulling model…";
-      mp.classList.remove("live");
-      $("agent-tag").textContent = "Ollama up — waiting for model pull";
     } else {
       mp.textContent = "model offline";
       mp.classList.remove("live");
-      $("agent-tag").textContent = "Start Ollama + pull qwen2.5:7b-instruct";
     }
   } catch {
     $("health").textContent = "offline";
     $("health").classList.remove("ok");
-    $("model-pill").textContent = "model ?";
   }
 }
 
@@ -89,7 +105,7 @@ async function loadCases() {
 async function selectCase(id) {
   state.caseId = id;
   $("case-title").textContent = id;
-  $("btn-audit").disabled = false;
+  ["btn-audit", "btn-reset", "btn-inject", "btn-investigate"].forEach((b) => { $(b).disabled = false; });
   document.querySelectorAll("#case-list li").forEach((li) => {
     li.classList.toggle("active", li.dataset.id === id);
   });
@@ -102,16 +118,14 @@ async function selectCase(id) {
     else if (pct >= 100) setArc(Math.max(state.arc, 3));
   } else {
     $("meter").classList.add("hidden");
-    $("evidence").innerHTML = '<div class="empty">No audit yet. Run evidence audit.</div>';
+    $("evidence").innerHTML = '<div class="empty">No audit yet.</div>';
     $("hypotheses").innerHTML = "";
-    $("doc").textContent = "Run an audit or Investigate with model.";
   }
   await loadDoc();
 }
 
 function renderFiles(files) {
-  const ul = $("files");
-  ul.innerHTML = files.map((f) => `<li>${esc(f)}</li>`).join("") || "<li class='empty'>No files</li>";
+  $("files").innerHTML = files.map((f) => `<li>${esc(f)}</li>`).join("") || "<li class='empty'>No files</li>";
 }
 
 function renderAudit(audit) {
@@ -139,13 +153,22 @@ function renderAudit(audit) {
   if (flags.length) {
     $("evidence").insertAdjacentHTML(
       "beforeend",
-      `<div class="empty" style="color:var(--warn)">Security: ${esc(flags.join("; "))} (treated as untrusted data)</div>`
+      `<div class="empty" style="color:var(--warn)">Security: ${esc(flags.join("; "))}</div>`
     );
   }
 }
 
 async function loadDoc() {
   if (!state.caseId) return;
+  if (state.tab === "eval") {
+    $("doc").classList.add("hidden");
+    $("eval-board").classList.remove("hidden");
+    if (state.lastEval) renderEvalBoard(state.lastEval);
+    else $("eval-board").innerHTML = '<div class="empty">No eval yet. Click «Run rule eval» or «Run live LLM eval».</div>';
+    return;
+  }
+  $("eval-board").classList.add("hidden");
+  $("doc").classList.remove("hidden");
   try {
     if (state.tab === "timeline") {
       const a = state.audit || (await api(`/api/cases/${state.caseId}`)).audit;
@@ -159,79 +182,79 @@ async function loadDoc() {
       try {
         $("doc").textContent = await api(`/api/cases/${state.caseId}/llm-report`);
       } catch {
-        $("doc").textContent = "No LLM report yet. Click «Investigate with model».";
+        $("doc").textContent = "No LLM report yet. Click Investigate.";
       }
       return;
     }
     const map = { handoff: "handoff", requests: "requests" };
     $("doc").textContent = await api(`/api/cases/${state.caseId}/${map[state.tab]}`);
   } catch {
-    $("doc").textContent = `No ${state.tab} yet. Run audit first.`;
+    $("doc").textContent = `No ${state.tab} yet.`;
   }
 }
 
 async function runAudit() {
   if (!state.caseId) return;
-  $("btn-audit").disabled = true;
+  const audit = await api(`/api/cases/${state.caseId}/audit`, { method: "POST" });
+  renderAudit(audit);
+  setArc(audit.completeness_percent < 60 ? 2 : 3);
+  await loadCases();
+  await loadDoc();
+  toast(`Audit ${state.caseId}: ${audit.completeness_percent}%`);
+}
+
+async function resetCase() {
+  const id = state.caseId || "CASE-1042";
+  const audit = await api(`/api/demo/reset?case_id=${encodeURIComponent(id)}`, { method: "POST" });
+  setArc(2);
+  await loadCases();
+  await selectCase(id);
+  renderAudit(audit);
+  toast(`Reset ${id}`);
+}
+
+async function injectCase() {
+  const id = state.caseId || "CASE-1042";
+  const audit = await api(`/api/demo/inject-complete?case_id=${encodeURIComponent(id)}`, { method: "POST" });
+  setArc(3);
+  await loadCases();
+  await selectCase(id);
+  renderAudit(audit);
+  toast(`Injected ${id} → ${audit.completeness_percent}%`);
+}
+
+async function investigateCase() {
+  await sendChat(`Investigate ${state.caseId || "CASE-1042"}`);
+}
+
+async function runEval(mode) {
+  if (state.busy) return;
+  state.busy = true;
+  toast(mode === "llm" ? "Live LLM eval running (1–3 min)…" : "Rule eval running…");
+  state.tab = "eval";
+  document.querySelectorAll(".tab").forEach((t) => t.classList.toggle("active", t.dataset.tab === "eval"));
   try {
-    const audit = await api(`/api/cases/${state.caseId}/audit`, { method: "POST" });
-    renderAudit(audit);
-    setArc(audit.completeness_percent < 60 ? 2 : 3);
-    await loadCases();
-    await loadDoc();
-    toast(`Audit ${state.caseId}: ${audit.completeness_percent}%`);
+    const payload = await api("/api/eval/run", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ mode }),
+      timeout: mode === "llm" ? 600000 : 120000,
+    });
+    renderEvalBoard(payload);
+    setArc(4);
+    toast(`Eval ${mode}: ${payload.pass_rate}% pass · avg ${payload.avg_score}`);
   } catch (e) {
     showError(e);
   } finally {
-    $("btn-audit").disabled = false;
+    state.busy = false;
   }
 }
 
 function showError(err) {
   const msg = (err && err.message) || String(err);
-  const tip =
-    msg.includes("Failed to fetch") || msg.includes("Load failed") || msg.includes("NetworkError")
-      ? "\n\nServer offline. Run: bash ~/Desktop/Nvidia/project/scripts/start-console.sh"
-      : "";
-  $("doc").textContent = `Error: ${msg}${tip}`;
-  $("health").textContent = "offline";
-  $("health").classList.remove("ok");
-}
-
-async function resetDemo() {
-  try {
-    const audit = await api("/api/demo/reset?case_id=CASE-1042", { method: "POST" });
-    setArc(1);
-    await loadCases();
-    await selectCase("CASE-1042");
-    renderAudit(audit);
-    setArc(2);
-    await loadDoc();
-    await refreshHealth();
-    toast("Demo reset → incomplete pack");
-  } catch (e) {
-    showError(e);
-  }
-}
-
-async function injectComplete() {
-  try {
-    const audit = await api("/api/demo/inject-complete?case_id=CASE-1042", { method: "POST" });
-    await loadCases();
-    await selectCase("CASE-1042");
-    renderAudit(audit);
-    setArc(3);
-    await loadDoc();
-    await refreshHealth();
-    toast("Evidence injected · 100% complete");
-  } catch (e) {
-    showError(e);
-  }
-}
-
-async function investigateCase() {
-  const id = state.caseId || "CASE-1042";
-  await sendChat(`Investigate ${id}`);
+  $("doc").classList.remove("hidden");
+  $("eval-board").classList.add("hidden");
+  $("doc").textContent = `Error: ${msg}`;
 }
 
 function addBubble(role, text) {
@@ -248,11 +271,9 @@ async function sendChat(message) {
   const msg = (message || "").trim();
   if (!msg || state.busy) return;
   state.busy = true;
-  $("btn-send").classList.add("busy");
-  $("btn-investigate").classList.add("busy");
   addBubble("user", msg);
   $("chat-input").value = "";
-  const thinking = addBubble("thinking", "Model reasoning over case files…");
+  const thinking = addBubble("thinking", "Reasoning over case files…");
   try {
     const data = await api("/api/chat", {
       method: "POST",
@@ -265,14 +286,8 @@ async function sendChat(message) {
     if (data.model_meta) {
       setArc(4);
       state.tab = "llm";
-      document.querySelectorAll(".tab").forEach((t) => {
-        t.classList.toggle("active", t.dataset.tab === "llm");
-      });
+      document.querySelectorAll(".tab").forEach((t) => t.classList.toggle("active", t.dataset.tab === "llm"));
       toast(`LLM · ${data.model_meta.provider} / ${data.model_meta.model}`);
-    } else if (msg.toLowerCase().includes("inject")) {
-      setArc(3);
-    } else if (msg.toLowerCase().includes("audit") || msg.toLowerCase().includes("reset")) {
-      setArc(2);
     }
     if (data.case_id) {
       await loadCases();
@@ -284,20 +299,19 @@ async function sendChat(message) {
   } catch (e) {
     thinking.remove();
     addBubble("agent", `Error: ${(e && e.message) || e}`);
-    showError(e);
   } finally {
     state.busy = false;
-    $("btn-send").classList.remove("busy");
-    $("btn-investigate").classList.remove("busy");
   }
 }
 
 function wire() {
   $("btn-refresh").onclick = loadCases;
-  $("btn-audit").onclick = runAudit;
-  $("btn-reset").onclick = resetDemo;
-  $("btn-inject").onclick = injectComplete;
-  $("btn-investigate").onclick = investigateCase;
+  $("btn-audit").onclick = () => runAudit().catch(showError);
+  $("btn-reset").onclick = () => resetCase().catch(showError);
+  $("btn-inject").onclick = () => injectCase().catch(showError);
+  $("btn-investigate").onclick = () => investigateCase().catch(showError);
+  $("btn-eval-rule").onclick = () => runEval("rule");
+  $("btn-eval-llm").onclick = () => runEval("llm");
   document.querySelectorAll(".tab").forEach((tab) => {
     tab.onclick = () => {
       document.querySelectorAll(".tab").forEach((t) => t.classList.remove("active"));
@@ -321,6 +335,6 @@ refreshHealth();
 loadCases();
 addBubble(
   "agent",
-  "SupportForge ready.\n1) Reset demo → 2) Audit gaps → 3) Inject evidence → 4) Investigate with model."
+  "SupportForge Lab ready (laptop-only).\n5 live goldens · rule + LLM eval · security gate on.\nStart: Reset CASE-1042 → Inject → Investigate → Run live LLM eval."
 );
-setInterval(refreshHealth, 6000);
+setInterval(refreshHealth, 8000);

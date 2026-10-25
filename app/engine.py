@@ -33,7 +33,8 @@ RECOMMENDED = [
 ]
 
 ERROR_RE = re.compile(
-    r"ERROR|OutOfMemory|CUDA out of memory|Xid|segfault|FATAL|panic|NVRM",
+    r"ERROR|OutOfMemory|CUDA out of memory|Xid|segfault|FATAL|panic|NVRM|"
+    r"NCCL|timeout|insufficient for CUDA|NaN|ECC|Remapped",
     re.I,
 )
 
@@ -250,17 +251,57 @@ def build_hypotheses(case: Path, rows: list[EvidenceRow], events: list[TimelineE
             except ValueError:
                 audit_security("file_access", result="denied", path=r.paths[0], case_id=case_id)
 
+    dmesg = ""
+    dmesg_path = case / "incoming" / "dmesg.txt"
+    if dmesg_path.exists():
+        try:
+            dmesg = allowed_case_path(case_id, "incoming/dmesg.txt").read_text(errors="replace")
+        except ValueError:
+            pass
+    nccl = ""
+    for name in ("nccl.log", "nccl.txt"):
+        p = case / "incoming" / name
+        if p.exists():
+            try:
+                nccl = allowed_case_path(case_id, f"incoming/{name}").read_text(errors="replace")
+            except ValueError:
+                pass
+            break
+    blob = log_text + smi_text + dmesg + nccl
+
     if "CUDA out of memory" in log_text or "OutOfMemoryError" in log_text:
         hyps.append(
-            "GPU memory exhaustion during serving init — supported by CUDA OOM lines in serving logs."
+            "GPU memory exhaustion during serving init — supported by CUDA out of memory lines in serving logs."
         )
     if "train_scratch" in smi_text:
         hyps.append(
             "Competing abandoned process `train_scratch.py` is holding majority of GPU memory — supported by nvidia-smi process table."
         )
-    if re.search(r"Xid|NVRM: Xid", log_text + smi_text, re.I):
+    if re.search(r"Xid\s*\(?.*\)?:\s*79|fallen off the bus", blob, re.I):
+        hyps.append(
+            "GPU/driver fault Xid 79 (GPU fallen off the bus) — supported by dmesg/NVRM markers; collect full kernel log before RMA."
+        )
+    elif re.search(r"Xid\s*\(?.*\)?:\s*94|Contained ECC|Remapped rows", blob, re.I):
+        hyps.append(
+            "Contained ECC / remapped-rows reliability fault (Xid 94) — supported by dmesg and nvidia-smi ECC counters; likely cause of NaN outputs."
+        )
+    elif re.search(r"Xid|NVRM: Xid", blob, re.I):
         hyps.append(
             "Possible GPU/driver fault (Xid) — supported by kernel/driver log markers; collect full dmesg before RMA assumptions."
+        )
+    if re.search(r"NCCL|WorkNCCL|ALLREDUCE", blob, re.I) and re.search(
+        r"timeout|Connection timed out|Connect to .* failed", blob, re.I
+    ):
+        hyps.append(
+            "NCCL collective hang/timeout — supported by train/NCCL logs; investigate inter-node connectivity or NIC firmware skew before model changes."
+        )
+    if re.search(r"insufficient for CUDA runtime|driver version is insufficient", blob, re.I):
+        hyps.append(
+            "CUDA driver/runtime mismatch — host driver CUDA capability below container/runtime requirement; upgrade driver before rebuilding the app."
+        )
+    if re.search(r"\bNaN\b", log_text, re.I) and not any("ECC" in h or "NaN" in h for h in hyps):
+        hyps.append(
+            "NaN outputs under load — check ECC/remapped rows and Xid history before assuming a model bug."
         )
     if not hyps and any(e.severity == "error" for e in events):
         hyps.append(
@@ -482,13 +523,15 @@ def inject_complete_evidence(case_id: str = "CASE-1042") -> dict[str, Any]:
     return audit_case(case_id)
 
 
-def seed_all_demo_cases() -> list[str]:
+def seed_all_demo_cases(force: bool = False) -> list[str]:
     ensure_layout()
     seeded = []
     for src in DEMO_COMPLETE.iterdir():
         if not src.is_dir() or src.name.endswith("-complete"):
             continue
         dest = CASES_DIR / src.name
+        if dest.exists() and force:
+            shutil.rmtree(dest)
         if not dest.exists():
             shutil.copytree(src, dest)
             seeded.append(src.name)

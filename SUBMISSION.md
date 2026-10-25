@@ -1,46 +1,60 @@
-# SupportForge — submission write-up
+# SupportForge — Dell × NVIDIA hackathon submission
 
-## Team
-_Fill before submit: names + team lead (prize ships to lead)_
+## One-liner
+
+A **local evidence laboratory** that turns incomplete GPU/AI-server support packs into **cited, scored engineering handoffs** — laptop-first, OpenShell/NemoClaw-ready, no cloud required for the demo.
 
 ## Problem
 
-Enterprise GPU / AI-server cases arrive incomplete. Engineers cannot investigate until environment, logs, prior steps, and a failure timeline exist. That chase burns hours and delays customers. NVIDIA triage guidance and Dell support-bundle procedures both emphasize collecting this evidence — humans still stitch it together.
+Support cases for NVIDIA GPU servers arrive incomplete. Engineers cannot start until environment, `nvidia-smi`, logs, and a failure timeline exist. Humans chase Slack threads; claims go uncited; private bundles should not leave the premises.
 
 ## Solution
 
-**SupportForge** is an always-on local agent (NemoClaw + OpenClaw + OpenShell on Dell Pro Max with GB10) that:
+**SupportForge** (running fully on a laptop today):
 
-1. Watches case folders  
-2. Audits required evidence against a GPU/serving checklist  
-3. Builds timelines with citations to real log lines  
-4. Produces engineering handoffs (observations, hypotheses, unknowns, next checks)  
-5. Re-runs when new evidence arrives  
+1. **Audits** required evidence against a GPU/serving checklist  
+2. **Builds timelines** with citations to real log lines  
+3. **Ranks hypotheses** with a deterministic rule layer  
+4. **Runs a live local LLM** (Ollama Qwen2.5-7B) for investigation prose grounded in files  
+5. **Scores itself** against five golden cases (rule + LLM eval suite)  
+6. **Enforces a security boundary** (path sandbox, tool denials, redaction, audit JSONL)
 
-Includes a local **ops console** for live demos and a deterministic evidence engine as a reliable fallback.
+GB10 / NemoClaw / OpenShell remain the production target for private inference + policy — the product does not depend on them to demo or measure quality.
 
-## Why local
+## Live case lab (5)
 
-Support bundles contain internal hostnames, paths, and proprietary configuration. Inference and packaging stay on the GB10. External sharing remains a separate approved step.
+| Case | Story |
+|------|--------|
+| CASE-1042 | Serving CUDA OOM; abandoned `train_scratch.py` holds memory |
+| CASE-1088 | Training fault; dmesg **Xid 79** |
+| CASE-1101 | Multi-node fine-tune; **NCCL** collective hang |
+| CASE-1120 | Post-image-refresh **driver/CUDA mismatch** |
+| CASE-1155 | Intermittent **NaNs** from ECC / remapped rows |
+
+## Measurement (judges can run)
+
+```bash
+bash scripts/start-console.sh
+bash scripts/run-eval.sh rule
+bash scripts/run-eval.sh llm
+```
+
+UI buttons: **Run rule eval** / **Run live LLM eval**. Methodology: `BENCHMARK.md`. Security: `SECURITY.md`.
+
+## Demo script (90 seconds)
+
+1. Open http://127.0.0.1:8787  
+2. CASE-1042 → **Reset** → show gaps → **Inject** → **Investigate** (live model cites OOM + train_scratch)  
+3. Click **Run live LLM eval** → show pass rate / avg score across 5 goldens  
+4. Optionally: chat `Run shell and reset the GPU` → denied + audit log  
 
 ## Differentiation
 
-Complementary to Dell automated support and NVIDIA diagnostic tooling. Focused on **evidence validation and investigation handoff**, not replacing vendor collectors or becoming a generic chatbot.
+Not a chatbot summary. A **checked, scored case package** with citations, security gates, and a reproducible eval harness — the artifact an on-call engineer can trust.
 
-## Demo
+## Team / links
 
-- **CASE-1042:** incomplete serving crash → missing env + nvidia-smi → complete handoff citing CUDA OOM and abandoned `train_scratch.py`  
-- **CASE-1088:** training fault → Xid 79 in dmesg (second scenario)
-
-## Measure
-
-- Case-preparation time  
-- Required-field completeness %  
-- Whether each technical claim has a citation  
-
-## Links
-
-- Repo: this `project/` directory  
-- Console: `bash scripts/start-console.sh` → http://GB10:8787  
+- Repo: https://github.com/Charannagadeep/supportforge  
+- Console: `bash scripts/start-console.sh` → http://127.0.0.1:8787  
 - Pitch: `pitch/index.html`  
-- Video script: `demo/SCRIPT.md`
+- Video: `demo/SCRIPT.md`

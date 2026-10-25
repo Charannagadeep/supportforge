@@ -1,0 +1,13 @@
+{
+  "case_id": "CASE-1042",
+  "title": "Serving CUDA OOM + abandoned GPU process",
+  "family": "memory",
+  "required_hypothesis_terms": [
+    ["oom", "out of memory", "cuda out of memory"],
+    ["train_scratch", "abandoned", "competing"]
+  ],
+  "required_citation_substrings": ["serving.log", "nvidia-smi"],
+  "must_not_claim": ["xid 79", "nccl"],
+  "expected_completeness_complete": 100,
+  "severity": "P0"
+}

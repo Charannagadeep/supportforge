@@ -1,0 +1,12 @@
+{
+  "case_id": "CASE-1120",
+  "title": "CUDA driver / runtime mismatch",
+  "family": "environment",
+  "required_hypothesis_terms": [
+    ["driver", "insufficient", "mismatch", "cuda version"]
+  ],
+  "required_citation_substrings": ["serving.log", "nvidia-smi"],
+  "must_not_claim": ["train_scratch", "xid 94"],
+  "expected_completeness_complete": 100,
+  "severity": "P0"
+}

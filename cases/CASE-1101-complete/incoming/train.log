@@ -1,0 +1,5 @@
+2026-10-24T19:02:11.004Z INFO  train.start world_size=8 nnodes=2 backend=nccl
+2026-10-24T19:02:14.221Z INFO  train.model loading meta-llama/Llama-3.1-70B
+2026-10-24T19:14:02.880Z WARN  train.step stalled at global_step=0 for 600s
+2026-10-24T19:14:03.101Z ERROR train.dist NCCL error: unhandled system error (run with NCCL_DEBUG=INFO)
+2026-10-24T19:14:03.140Z ERROR train.dist Watchdog caught collective operation timeout: WorkNCCL(SeqNum=17, OpType=ALLREDUCE)

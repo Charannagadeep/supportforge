@@ -1,0 +1,9 @@
+{
+  "hostname": "infer-edge-07",
+  "os": "Ubuntu 22.04.5 LTS",
+  "gpu": "1x NVIDIA L40S",
+  "driver": "535.183.01",
+  "cuda_toolkit_in_container": "12.6",
+  "framework": "vLLM 0.6.3 (cu126 wheel)",
+  "notes": "Host driver left at 535 after image refresh; container expects 12.6 capability."
+}

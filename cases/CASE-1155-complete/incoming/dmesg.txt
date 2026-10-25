@@ -1,0 +1,3 @@
+[884422.11] NVRM: Xid (PCI:0000:18:00): 94, pid=4402, Contained ECC error reported on GPU
+[884422.12] NVRM: Xid 94: Contained: DRAM ECC error, falling back to remapped rows
+[884510.44] NVRM: Remapped rows pending retirement on GPU 0000:18:00.0

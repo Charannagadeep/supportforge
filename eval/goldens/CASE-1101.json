@@ -1,0 +1,13 @@
+{
+  "case_id": "CASE-1101",
+  "title": "NCCL collective hang across nodes",
+  "family": "distributed",
+  "required_hypothesis_terms": [
+    ["nccl", "collective", "allreduce", "timeout"],
+    ["connect", "network", "node", "nic", "firmware"]
+  ],
+  "required_citation_substrings": ["train.log", "nccl"],
+  "must_not_claim": ["cuda out of memory", "xid 79"],
+  "expected_completeness_complete": 100,
+  "severity": "P1"
+}

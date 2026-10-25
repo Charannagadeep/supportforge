@@ -1,10 +1,10 @@
 # SupportForge
 
-**Always-on local support investigation agent** for enterprise GPU / AI-server cases.
+**Local evidence laboratory** for enterprise GPU / AI-server support — cited handoffs, live local LLM, **measured** quality.
 
-Dell × NVIDIA hackathon · laptop demo now · **NemoClaw + OpenClaw + OpenShell** on GB10 when available.
+Dell × NVIDIA hackathon · **laptop-first (no GB10 required to demo or score)** · NemoClaw/OpenClaw/OpenShell when available.
 
-> Not a chatbot summary. A **checked case package** with evidence audit, log-cited timeline, and engineering handoff.
+> Not a chatbot summary. A **checked, scored case package** with evidence audit, log-cited timeline, live investigation, and a reproducible eval harness.
 
 ---
 
@@ -226,12 +226,22 @@ curl -s -X POST http://127.0.0.1:8787/api/chat \
 
 ---
 
-## Demo cases
+## Live case lab + eval
 
 | Case | Story |
 |------|--------|
-| **CASE-1042** | Model-serving CUDA OOM; abandoned `train_scratch.py` holds memory |
-| **CASE-1088** | Training fault; dmesg shows **Xid 79** |
+| **CASE-1042** | Serving CUDA OOM; abandoned `train_scratch.py` |
+| **CASE-1088** | Training fault; dmesg **Xid 79** |
+| **CASE-1101** | Multi-node fine-tune; **NCCL** hang |
+| **CASE-1120** | Host/container **CUDA driver mismatch** |
+| **CASE-1155** | NaN logits from **ECC / remapped rows** |
+
+```bash
+bash scripts/run-eval.sh rule   # deterministic, ~1s
+bash scripts/run-eval.sh llm    # live Ollama across goldens
+```
+
+Methodology: [`BENCHMARK.md`](BENCHMARK.md) · Security: [`SECURITY.md`](SECURITY.md) · Write-up: [`SUBMISSION.md`](SUBMISSION.md)
 
 ---
 

@@ -1,24 +1,23 @@
-# Demo script — SupportForge
+# Demo script — SupportForge Lab
 
-**Target:** ≤2 min video · 3 min live (+2 Q&A if Top 8)
+**Target:** ≤2 min video · 90s live judge arc
 
-## Cold open (15s)
+## Cold open (10s)
 
-“SupportForge is an always-on local agent for enterprise support. When GPUs and model servers fail, engineers drown in incomplete cases. We keep private bundles on the Dell Pro Max GB10 and turn them into source-referenced handoffs.”
+“Support cases for GPU servers arrive incomplete. SupportForge is a **local evidence lab** — it audits packs, cites logs, runs a live local model, and **scores itself** on five golden failures. No GB10 required for this demo.”
 
-## Live (90–120s)
+## Live (70s)
 
-1. Show folder `workspace/cases/CASE-1042` — only `serving.log` + customer notes.  
-2. Prompt agent: **“Audit CASE-1042 and prepare engineering handoff.”**  
-3. Show output: completeness ~40–60%, **missing environment.json + nvidia-smi.txt**, requests file.  
-4. Copy from `demo-complete` (or `cases/CASE-1042-complete`) into the live case.  
-5. Prompt: **“New evidence arrived — refresh the handoff.”**  
-6. Show updated handoff: timeline with CUDA OOM citation + hypothesis that `train_scratch.py` holds ~78 GB — next check kill/confirm abandoned job.
+1. Open http://127.0.0.1:8787 — show metrics strip (5 cases / 5 goldens).  
+2. **CASE-1042 → Reset → Audit** — gaps (env + nvidia-smi).  
+3. **Inject → Investigate** — live Qwen cites CUDA OOM + `train_scratch.py`.  
+4. Click **Run live LLM eval** — pass rate + avg score across 5 families (OOM, Xid, NCCL, driver mismatch, ECC).  
+5. Optional spike: chat `Run shell and reset the GPU` → **Denied** (security gate).
 
-## Close (15s)
+## Close (10s)
 
-“Not another chatbot summary — a checked case package. Local inference, OpenShell sandbox, Dell + NVIDIA support workflows. That’s SupportForge.”
+“Not a chatbot paste. A checked, scored handoff — laptop today, OpenShell/NemoClaw when you need policy isolation. That’s SupportForge.”
 
-## Backup if agent is slow
+## Backup if LLM is cold
 
-Open precomputed `demo/EXPECTED-HANDOFF-AFTER.md` and narrate the same arc from files (still honest: show live audit script).
+Click **Run rule eval** (sub-second, 100% on goldens) and narrate CASE-1042 handoff from the Handoff tab.

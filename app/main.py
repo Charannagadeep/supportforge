@@ -6,6 +6,8 @@ import os
 from pathlib import Path
 from typing import Any
 
+from dataclasses import asdict
+
 from fastapi import Depends, FastAPI, Header, HTTPException
 from fastapi.responses import FileResponse, HTMLResponse, PlainTextResponse
 from fastapi.staticfiles import StaticFiles
@@ -13,7 +15,7 @@ from starlette.middleware.cors import CORSMiddleware
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 from pydantic import BaseModel, Field
 
-from . import agent, engine, llm
+from . import agent, engine, eval as evalkit, llm
 from .security import (
     SecurityMiddleware,
     allowed_hosts,
@@ -25,7 +27,7 @@ from .security import (
 
 STATIC = Path(__file__).parent / "static"
 
-app = FastAPI(title="SupportForge", version="0.2.1")
+app = FastAPI(title="SupportForge", version="0.3.0")
 app.add_middleware(TrustedHostMiddleware, allowed_hosts=allowed_hosts())
 app.add_middleware(SecurityMiddleware)
 configured_origins = [o.strip() for o in os.getenv("SUPPORTFORGE_CORS_ORIGINS", "").split(",") if o.strip()]
@@ -36,6 +38,15 @@ if configured_origins:
 @app.on_event("startup")
 def _startup() -> None:
     engine.ensure_layout()
+    # Ensure newly added case packs appear in the live workspace.
+    for cid in ("CASE-1101", "CASE-1120", "CASE-1155"):
+        dest = engine.CASES_DIR / cid
+        src = engine.DEMO_COMPLETE / cid
+        if src.is_dir() and not dest.exists():
+            import shutil
+
+            shutil.copytree(src, dest)
+            engine.audit_case(cid)
     engine.seed_all_demo_cases()
 
 
@@ -52,9 +63,11 @@ def health() -> dict[str, Any]:
         "local": True,
         "mode": "laptop",
         "runtime": "macos-local",
-        "version": "0.2.1",
+        "version": "0.3.0",
         "provider": provider,
         "model_online": provider.get("provider") not in ("none",) and provider.get("status") != "no_models",
+        "cases": len(engine.list_cases()),
+        "goldens": len(evalkit.list_goldens()),
         "security": {
             "api_key_required": bool(os.getenv("SUPPORTFORGE_API_KEY", "").strip()),
             "bind_default": "127.0.0.1",
@@ -165,6 +178,40 @@ def llm_report(case_id: str) -> PlainTextResponse:
     if not path.exists():
         raise HTTPException(404, "No LLM report yet — run Investigate")
     return PlainTextResponse(path.read_text())
+
+
+class EvalIn(BaseModel):
+    mode: str = Field(default="rule", pattern="^(rule|llm)$")
+    case_ids: list[str] | None = None
+
+
+@app.get("/api/eval/goldens", dependencies=[Depends(require_api_key)])
+def eval_goldens() -> list[dict[str, Any]]:
+    return evalkit.list_goldens()
+
+
+@app.post("/api/eval/run", dependencies=[Depends(require_api_key)])
+def eval_run(body: EvalIn) -> dict[str, Any]:
+    audit_security("eval_suite", mode=body.mode, cases=len(body.case_ids or []))
+    try:
+        return evalkit.run_suite(mode=body.mode, case_ids=body.case_ids)
+    except Exception as e:  # noqa: BLE001
+        raise HTTPException(500, str(e)) from e
+
+
+@app.post("/api/eval/case/{case_id}", dependencies=[Depends(require_api_key)])
+def eval_one(case_id: str, mode: str = "rule") -> dict[str, Any]:
+    try:
+        case_id = engine.validate_case_id(case_id)
+        if mode == "llm":
+            score = evalkit.score_investigate(case_id)
+        else:
+            score = evalkit.score_audit(case_id, use_complete=True)
+        row = asdict(score)
+        row["passed"] = score.passed
+        return row
+    except FileNotFoundError as e:
+        raise HTTPException(404, str(e)) from e
 
 
 @app.get("/", response_class=HTMLResponse)

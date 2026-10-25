@@ -1,0 +1,9 @@
+{
+  "hostname": "gpu-prod-19",
+  "os": "Ubuntu 24.04.1 LTS",
+  "gpu": "1x NVIDIA H100 80GB",
+  "driver": "560.35.03",
+  "cuda": "12.6",
+  "framework": "TensorRT-LLM 0.15",
+  "ecc": "enabled"
+}

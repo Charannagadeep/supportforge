@@ -1,0 +1,6 @@
+NCCL INFO Bootstrap : Using eth0:10.4.1.11<0>
+NCCL INFO NET/Plugin: Failed to find ncclNetPlugin_v8
+NCCL WARN NET/IB : No device found.
+NCCL INFO Using network Socket
+NCCL WARN Connect to 10.4.1.12 failed : Connection timed out
+NCCL ERROR Call to connect returned Connection timed out

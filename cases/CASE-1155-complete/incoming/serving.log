@@ -1,0 +1,4 @@
+2026-10-26T16:20:01.002Z INFO  serving.start model=org/contoso-embed-7b
+2026-10-26T16:58:44.221Z WARN  serving.metrics nan_ratio=0.02 window=60s
+2026-10-26T17:01:12.880Z ERROR serving.output detected NaN logits on request_id=r-99102
+2026-10-26T17:01:13.010Z WARN  serving.output falling back to zero vector (degraded)

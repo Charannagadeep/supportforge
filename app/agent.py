@@ -54,18 +54,19 @@ def handle_message(message: str, actor: str = "console-local") -> dict[str, Any]
 
     # Demo choreography
     if any(k in low for k in ("reset demo", "reset case", "start over", "incomplete")):
-        audit_security("agent_tool", actor=actor, tool="reset_demo")
-        audit = engine.reset_demo_case("CASE-1042")
+        cid = case_id or "CASE-1042"
+        audit_security("agent_tool", actor=actor, tool="reset_demo", case_id=cid)
+        audit = engine.reset_demo_case(cid)
         return _pack(
-            "Reset **CASE-1042** to the incomplete pack (serving log only).\n"
+            f"Reset **{cid}** to the incomplete pack.\n"
             f"Completeness **{audit['completeness_percent']}%**.\n"
             "Missing: "
             + ", ".join(
                 r["item"] for r in audit["evidence"] if r["required"] and r["status"] != "present"
             )
-            + ".\n\nNext: **audit CASE-1042** or **investigate CASE-1042** (LLM).",
+            + f".\n\nNext: **audit {cid}** or **investigate {cid}** (LLM).",
             audit,
-            "CASE-1042",
+            cid,
             provider,
         )
 

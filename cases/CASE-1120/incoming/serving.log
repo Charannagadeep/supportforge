@@ -1,0 +1,4 @@
+2026-10-27T07:01:02.010Z INFO  serving.start version=0.6.3
+2026-10-27T07:01:02.440Z ERROR serving.cuda CUDA driver version is insufficient for CUDA runtime version
+2026-10-27T07:01:02.441Z ERROR serving.cuda The detected NVIDIA driver supports up to CUDA 12.2; this build requires CUDA 12.6+
+2026-10-27T07:01:02.500Z INFO  serving.shutdown exit_code=1

@@ -1,0 +1,5 @@
+Fri Oct 24 19:14:00 2026
+Driver Version: 550.127.05    CUDA Version: 12.4
+| GPU  Name        | Mem-Usage     | GPU-Util |
+| 0-7  A100-SXM4   | 71–74 GiB ea  | 0–2%     |
+Processes: python train.py (all ranks) — util near idle while waiting on collective.
