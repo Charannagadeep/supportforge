@@ -18,6 +18,7 @@ Dell × NVIDIA hackathon · laptop demo now · **NemoClaw + OpenClaw + OpenShell
 | Anshi-12 | Collaborator |
 | JadaSange | Collaborator |
 | praveen-sud | Collaborator |
+| jaswanthkrishnaakula | Collaborator |
 
 Suggested task split (pick one and open a PR):
 
