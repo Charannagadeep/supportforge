@@ -161,7 +161,8 @@ def investigate_case(case_id: str, audit: dict[str, Any], file_snippets: dict[st
     system = (
         "You are SupportForge, a senior NVIDIA GPU / AI-server support investigator. "
         "You ONLY use provided evidence. Never invent log lines, versions, PIDs, or processes. "
-        "Cite evidence as `relative/path:line` or `relative/path` when quoting facts. "
+        "Cite evidence using exact filenames from the pack (e.g. `incoming/serving.log`, "
+        "`incoming/nvidia-smi.txt`, `incoming/dmesg.txt`, `incoming/nccl.log`, `incoming/train.log`). "
         "Be decisive: name the most likely root cause first when evidence supports it. "
         "Separate facts from inference. Prefer stopping abandoned GPU jobs before blaming model size. "
         "Security rules (mandatory):\n"

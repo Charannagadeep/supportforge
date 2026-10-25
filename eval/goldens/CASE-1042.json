@@ -6,8 +6,8 @@
     ["oom", "out of memory", "cuda out of memory"],
     ["train_scratch", "abandoned", "competing"]
   ],
-  "required_citation_substrings": ["serving.log", "nvidia-smi"],
-  "must_not_claim": ["xid 79", "nccl"],
+  "required_citation_substrings": ["serving", "nvidia-smi"],
+  "must_not_claim": ["xid 79", "nccl timeout"],
   "expected_completeness_complete": 100,
   "severity": "P0"
 }

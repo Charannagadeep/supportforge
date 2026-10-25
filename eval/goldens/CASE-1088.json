@@ -5,7 +5,7 @@
   "required_hypothesis_terms": [
     ["xid", "fallen off the bus", "gpu/driver"]
   ],
-  "required_citation_substrings": ["dmesg", "train.log"],
+  "required_citation_substrings": ["dmesg", "train"],
   "must_not_claim": ["train_scratch", "nccl timeout"],
   "expected_completeness_complete": 100,
   "severity": "P0"

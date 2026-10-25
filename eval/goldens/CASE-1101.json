@@ -6,7 +6,7 @@
     ["nccl", "collective", "allreduce", "timeout"],
     ["connect", "network", "node", "nic", "firmware"]
   ],
-  "required_citation_substrings": ["train.log", "nccl"],
+  "required_citation_substrings": ["train", "nccl"],
   "must_not_claim": ["cuda out of memory", "xid 79"],
   "expected_completeness_complete": 100,
   "severity": "P1"

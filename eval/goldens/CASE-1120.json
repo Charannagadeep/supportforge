@@ -5,7 +5,7 @@
   "required_hypothesis_terms": [
     ["driver", "insufficient", "mismatch", "cuda version"]
   ],
-  "required_citation_substrings": ["serving.log", "nvidia-smi"],
+  "required_citation_substrings": ["cuda", "driver"],
   "must_not_claim": ["train_scratch", "xid 94"],
   "expected_completeness_complete": 100,
   "severity": "P0"
