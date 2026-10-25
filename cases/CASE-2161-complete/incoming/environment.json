@@ -1,0 +1,14 @@
+{
+  "source_issue": "2161",
+  "url": "https://github.com/NVIDIA/nvidia-container-toolkit/issues/2161",
+  "toolkit_version": "1.17.8",
+  "driver_version": "550.127.05",
+  "cuda_version": "12.4",
+  "os": "Ubuntu 24.04",
+  "kernel_version": "unknown",
+  "container_runtime": "unknown",
+  "kubernetes": "False",
+  "gpu_model": "B200",
+  "category": "CDI",
+  "notes": "Completed pack synthesizes missing fields for demo inject; incomplete pack mirrors the real GitHub evidence gap."
+}

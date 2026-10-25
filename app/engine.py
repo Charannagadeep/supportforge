@@ -299,6 +299,14 @@ def build_hypotheses(case: Path, rows: list[EvidenceRow], events: list[TimelineE
         hyps.append(
             "CUDA driver/runtime mismatch — host driver CUDA capability below container/runtime requirement; upgrade driver before rebuilding the app."
         )
+    if re.search(r"No supported GPUs were found|failed to initialize NVML|CDI", blob, re.I):
+        hyps.append(
+            "Container toolkit / CDI device discovery failure — supported by runtime logs; verify GPU bind (vfio vs nvidia), CDI mode, and nvidia-smi on the host."
+        )
+    if re.search(r"NVSDM|libnvsdm|NvSwitch", blob, re.I):
+        hyps.append(
+            "NVSwitch / NVSDM library missing from management CDI — supported by DCGM/NVSDM errors; ensure management CDI mounts libnvsdm and IB deps."
+        )
     if re.search(r"\bNaN\b", log_text, re.I) and not any("ECC" in h or "NaN" in h for h in hyps):
         hyps.append(
             "NaN outputs under load — check ECC/remapped rows and Xid history before assuming a model bug."

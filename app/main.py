@@ -15,7 +15,7 @@ from starlette.middleware.cors import CORSMiddleware
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 from pydantic import BaseModel, Field
 
-from . import agent, engine, eval as evalkit, llm
+from . import agent, corpus, engine, eval as evalkit, llm
 from .security import (
     SecurityMiddleware,
     allowed_hosts,
@@ -39,12 +39,12 @@ if configured_origins:
 def _startup() -> None:
     engine.ensure_layout()
     # Ensure newly added case packs appear in the live workspace.
-    for cid in ("CASE-1101", "CASE-1120", "CASE-1155"):
+    import shutil
+
+    for cid in ("CASE-1101", "CASE-1120", "CASE-1155", "CASE-2163", "CASE-2161"):
         dest = engine.CASES_DIR / cid
         src = engine.DEMO_COMPLETE / cid
         if src.is_dir() and not dest.exists():
-            import shutil
-
             shutil.copytree(src, dest)
             engine.audit_case(cid)
     engine.seed_all_demo_cases()
@@ -68,6 +68,8 @@ def health() -> dict[str, Any]:
         "model_online": provider.get("provider") not in ("none",) and provider.get("status") != "no_models",
         "cases": len(engine.list_cases()),
         "goldens": len(evalkit.list_goldens()),
+        "corpus_issues": corpus.stats().get("issues", 0),
+        "corpus_incomplete_rate": corpus.stats().get("incomplete_rate_pct"),
         "security": {
             "api_key_required": bool(os.getenv("SUPPORTFORGE_API_KEY", "").strip()),
             "bind_default": "127.0.0.1",
@@ -212,6 +214,24 @@ def eval_one(case_id: str, mode: str = "rule") -> dict[str, Any]:
         return row
     except FileNotFoundError as e:
         raise HTTPException(404, str(e)) from e
+
+
+@app.get("/api/corpus/stats", dependencies=[Depends(require_api_key)])
+def corpus_stats() -> dict[str, Any]:
+    return corpus.stats()
+
+
+@app.get("/api/corpus/issues", dependencies=[Depends(require_api_key)])
+def corpus_issues(q: str = "", incomplete_only: bool = True, limit: int = 40) -> list[dict[str, Any]]:
+    return corpus.list_issues(q=q, incomplete_only=incomplete_only, limit=limit)
+
+
+@app.get("/api/corpus/issues/{issue_number}", dependencies=[Depends(require_api_key)])
+def corpus_issue(issue_number: str) -> dict[str, Any]:
+    item = corpus.get_issue(issue_number)
+    if not item:
+        raise HTTPException(404, "issue not found in corpus")
+    return item
 
 
 @app.get("/", response_class=HTMLResponse)

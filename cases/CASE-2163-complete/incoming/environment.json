@@ -1,0 +1,14 @@
+{
+  "source_issue": "2163",
+  "url": "https://github.com/NVIDIA/nvidia-container-toolkit/issues/2163",
+  "toolkit_version": "1.19.1",
+  "driver_version": "595.91.07",
+  "cuda_version": "12.4",
+  "os": "Talos",
+  "kernel_version": "6.18.54",
+  "container_runtime": "containerd",
+  "kubernetes": "True",
+  "gpu_model": "RTX PRO 6000",
+  "category": "Kubernetes / GPU Operator",
+  "notes": "Completed pack synthesizes missing fields for demo inject; incomplete pack mirrors the real GitHub evidence gap."
+}

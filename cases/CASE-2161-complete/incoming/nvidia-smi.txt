@@ -1,0 +1,5 @@
+Fri Oct 24 12:00:00 2026
+NVIDIA-SMI 550.127.05   Driver Version: 550.127.05   CUDA Version: 12.4
+| GPU  Name | Mem-Usage | GPU-Util |
+| 0 B200 | varies | varies |
+Note: reconstructed for complete-pack demo from issue #2161 metadata.

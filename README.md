@@ -235,6 +235,11 @@ curl -s -X POST http://127.0.0.1:8787/api/chat \
 | **CASE-1101** | Multi-node fine-tune; **NCCL** hang |
 | **CASE-1120** | Host/container **CUDA driver mismatch** |
 | **CASE-1155** | NaN logits from **ECC / remapped rows** |
+| **CASE-2163** | Real GH issue — CDI/NVML fail when GPUs on vfio-pci |
+| **CASE-2161** | Real GH issue — `libnvsdm` missing from management CDI |
+
+**Real NVIDIA corpus:** `data/nvidia_container_toolkit_issues.csv` (80 cleaned toolkit issues).  
+UI tab **NVIDIA corpus** · API `/api/corpus/stats` — ~60% of real issues are under 70% evidence (same gaps we audit).
 
 ```bash
 bash scripts/run-eval.sh rule   # deterministic, ~1s

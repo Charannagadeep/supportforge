@@ -1,0 +1,2 @@
+2026-10-24T12:00:00Z ERROR toolkit issue=#2161
+ERROR [316:316] [[NvSwitch]] NVSDM error: 8 [./modules/nvswitch/DcgmNvsdmManager.cpp:982]

@@ -30,11 +30,11 @@
   </header>
 
   <section class="metrics" id="metrics">
-    <div class="metric"><span class="k">Cases</span><span class="v" id="m-cases">—</span></div>
+    <div class="metric"><span class="k">Live cases</span><span class="v" id="m-cases">—</span></div>
     <div class="metric"><span class="k">Goldens</span><span class="v" id="m-goldens">—</span></div>
-    <div class="metric"><span class="k">Pass rate</span><span class="v" id="m-pass">—</span></div>
-    <div class="metric"><span class="k">Avg score</span><span class="v" id="m-avg">—</span></div>
-    <div class="metric"><span class="k">Last mode</span><span class="v" id="m-mode">—</span></div>
+    <div class="metric"><span class="k">NVIDIA issues</span><span class="v" id="m-corpus">—</span></div>
+    <div class="metric"><span class="k">Real incomplete</span><span class="v" id="m-incomplete">—</span></div>
+    <div class="metric"><span class="k">Eval pass</span><span class="v" id="m-pass">—</span></div>
   </section>
 
   <section class="arc">
@@ -96,11 +96,13 @@
         <button class="tab active" data-tab="handoff">Handoff</button>
         <button class="tab" data-tab="llm">LLM report</button>
         <button class="tab" data-tab="eval">Eval board</button>
+        <button class="tab" data-tab="corpus">NVIDIA corpus</button>
         <button class="tab" data-tab="requests">Requests</button>
         <button class="tab" data-tab="timeline">Timeline</button>
       </div>
       <pre id="doc" class="doc">Run an investigation or the live eval suite. Scores write to workspace/outbox/eval-*.json.</pre>
       <div id="eval-board" class="eval-board hidden"></div>
+      <div id="corpus-board" class="eval-board hidden"></div>
     </section>
   </main>
 

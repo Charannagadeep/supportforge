@@ -70,6 +70,9 @@ async function refreshHealth() {
     el.classList.toggle("ok", !!h.ok);
     $("m-cases").textContent = String(h.cases ?? "—");
     $("m-goldens").textContent = String(h.goldens ?? "—");
+    $("m-corpus").textContent = String(h.corpus_issues ?? "—");
+    $("m-incomplete").textContent =
+      h.corpus_incomplete_rate != null ? `${h.corpus_incomplete_rate}%` : "—";
     const p = h.provider || {};
     const mp = $("model-pill");
     if (h.model_online) {
@@ -158,16 +161,58 @@ function renderAudit(audit) {
   }
 }
 
+async function renderCorpusBoard() {
+  $("doc").classList.add("hidden");
+  $("eval-board").classList.add("hidden");
+  const board = $("corpus-board");
+  board.classList.remove("hidden");
+  board.innerHTML = '<div class="empty">Loading NVIDIA corpus…</div>';
+  try {
+    const stats = await api("/api/corpus/stats");
+    const issues = await api("/api/corpus/issues?incomplete_only=true&limit=12");
+    const gaps = (stats.supportforge_gap_alignment || [])
+      .map((g) => `<span class="badge weak">${esc(g.item)} · ${esc(g.mentions)}</span>`)
+      .join(" ");
+    const rows = issues
+      .map(
+        (i) => `<div class="eval-row ${i.evidence_pct < 50 ? "fail" : "pass"}">
+        <div>
+          <div class="id">#${esc(i.issue_number)}</div>
+          <div class="title">${esc(i.category)}</div>
+        </div>
+        <div class="title">${esc(i.title)}<br/><span style="opacity:.7">${esc(i.error_message || i.missing_evidence || "")}</span></div>
+        <div class="score">${esc(i.evidence_pct)}%</div>
+        <div class="title"><a href="${esc(i.url)}" target="_blank" rel="noopener" style="color:var(--accent)">GH</a></div>
+      </div>`
+      )
+      .join("");
+    board.innerHTML = `
+      <div class="empty" style="color:var(--ink)">${esc(stats.thesis)}</div>
+      <div class="title" style="margin:8px 0">SupportForge checklist alignment (missing-field mentions)</div>
+      <div class="chips" style="margin-bottom:10px">${gaps}</div>
+      <div class="title">Lowest-evidence open user reports</div>
+      ${rows}`;
+  } catch (e) {
+    board.innerHTML = `<div class="empty">Corpus error: ${esc((e && e.message) || e)}</div>`;
+  }
+}
+
 async function loadDoc() {
-  if (!state.caseId) return;
+  if (state.tab === "corpus") {
+    await renderCorpusBoard();
+    return;
+  }
+  if (!state.caseId && state.tab !== "eval") return;
   if (state.tab === "eval") {
     $("doc").classList.add("hidden");
+    $("corpus-board").classList.add("hidden");
     $("eval-board").classList.remove("hidden");
     if (state.lastEval) renderEvalBoard(state.lastEval);
     else $("eval-board").innerHTML = '<div class="empty">No eval yet. Click «Run rule eval» or «Run live LLM eval».</div>';
     return;
   }
   $("eval-board").classList.add("hidden");
+  $("corpus-board").classList.add("hidden");
   $("doc").classList.remove("hidden");
   try {
     if (state.tab === "timeline") {

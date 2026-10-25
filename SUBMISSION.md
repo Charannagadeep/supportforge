@@ -30,6 +30,9 @@ GB10 / NemoClaw / OpenShell remain the production target for private inference +
 | CASE-1101 | Multi-node fine-tune; **NCCL** collective hang |
 | CASE-1120 | Post-image-refresh **driver/CUDA mismatch** |
 | CASE-1155 | Intermittent **NaNs** from ECC / remapped rows |
+| CASE-2163 / 2161 | **Real** NVIDIA Container Toolkit GitHub issues (imported) |
+
+**Corpus proof:** 80 cleaned `nvidia-container-toolkit` issues — average evidence ~52%, **60% incomplete (&lt;70%)**, top gaps = cuda / nvidia-smi / driver (same checklist SupportForge enforces). UI: **NVIDIA corpus** tab.
 
 ## Measurement (judges can run)
 
