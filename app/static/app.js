@@ -1,7 +1,10 @@
-const state = { caseId: null, tab: "handoff", audit: null };
+const state = { caseId: null, tab: "handoff", audit: null, arc: 1, busy: false };
 
 async function api(path, opts) {
-  const res = await fetch(path, opts);
+  const res = await fetch(path, {
+    ...opts,
+    signal: AbortSignal.timeout((opts && opts.timeout) || 180000),
+  });
   if (!res.ok) throw new Error(await res.text());
   const ct = res.headers.get("content-type") || "";
   if (ct.includes("application/json")) return res.json();
@@ -10,14 +13,48 @@ async function api(path, opts) {
 
 function $(id) { return document.getElementById(id); }
 
+function toast(msg) {
+  const el = $("toast");
+  el.textContent = msg;
+  el.classList.remove("hidden");
+  clearTimeout(toast._t);
+  toast._t = setTimeout(() => el.classList.add("hidden"), 3200);
+}
+
+function setArc(n) {
+  state.arc = n;
+  document.querySelectorAll(".arc-step").forEach((el) => {
+    const s = Number(el.dataset.step);
+    el.classList.toggle("active", s === n);
+    el.classList.toggle("done", s < n);
+  });
+}
+
 async function refreshHealth() {
   try {
-    const h = await api("/api/health");
+    const h = await api("/api/health", { timeout: 5000 });
     const el = $("health");
-    el.textContent = h.ok ? "local · online" : "degraded";
+    el.textContent = h.ok ? "console · online" : "degraded";
     el.classList.toggle("ok", !!h.ok);
+    const p = h.provider || {};
+    const mp = $("model-pill");
+    if (h.model_online) {
+      mp.textContent = `${p.provider} · ${p.model}`;
+      mp.classList.add("live");
+      $("agent-tag").textContent = `Live model · ${p.provider} / ${p.model}`;
+    } else if (p.provider === "ollama" && p.status === "no_models") {
+      mp.textContent = "ollama · pulling model…";
+      mp.classList.remove("live");
+      $("agent-tag").textContent = "Ollama up — waiting for model pull";
+    } else {
+      mp.textContent = "model offline";
+      mp.classList.remove("live");
+      $("agent-tag").textContent = "Start Ollama + pull qwen2.5:7b-instruct";
+    }
   } catch {
     $("health").textContent = "offline";
+    $("health").classList.remove("ok");
+    $("model-pill").textContent = "model ?";
   }
 }
 
@@ -46,12 +83,16 @@ async function selectCase(id) {
   });
   const detail = await api(`/api/cases/${id}`);
   renderFiles(detail.files || []);
-  if (detail.audit) renderAudit(detail.audit);
-  else {
+  if (detail.audit) {
+    renderAudit(detail.audit);
+    const pct = detail.audit.completeness_percent || 0;
+    if (pct < 60) setArc(2);
+    else if (pct >= 100) setArc(Math.max(state.arc, 3));
+  } else {
     $("meter").classList.add("hidden");
     $("evidence").innerHTML = '<div class="empty">No audit yet. Run evidence audit.</div>';
     $("hypotheses").innerHTML = "";
-    $("doc").textContent = "Run an audit to generate the engineering package.";
+    $("doc").textContent = "Run an audit or Investigate with model.";
   }
   await loadDoc();
 }
@@ -67,6 +108,7 @@ function renderAudit(audit) {
   const pct = audit.completeness_percent || 0;
   $("meter-fill").style.width = `${pct}%`;
   $("meter-pct").textContent = `${pct}%`;
+  $("event-count").textContent = String((audit.timeline || []).length);
   const rows = (audit.evidence || [])
     .filter((e) => e.required)
     .map(
@@ -85,7 +127,6 @@ function renderAudit(audit) {
 
 async function loadDoc() {
   if (!state.caseId) return;
-  const map = { handoff: "handoff", requests: "requests", timeline: "timeline" };
   try {
     if (state.tab === "timeline") {
       const a = state.audit || (await api(`/api/cases/${state.caseId}`)).audit;
@@ -95,8 +136,16 @@ async function loadDoc() {
         : "No timeline events yet.";
       return;
     }
-    const text = await api(`/api/cases/${state.caseId}/${map[state.tab]}`);
-    $("doc").textContent = text;
+    if (state.tab === "llm") {
+      try {
+        $("doc").textContent = await api(`/api/cases/${state.caseId}/llm-report`);
+      } catch {
+        $("doc").textContent = "No LLM report yet. Click «Investigate with model».";
+      }
+      return;
+    }
+    const map = { handoff: "handoff", requests: "requests" };
+    $("doc").textContent = await api(`/api/cases/${state.caseId}/${map[state.tab]}`);
   } catch {
     $("doc").textContent = `No ${state.tab} yet. Run audit first.`;
   }
@@ -108,10 +157,12 @@ async function runAudit() {
   try {
     const audit = await api(`/api/cases/${state.caseId}/audit`, { method: "POST" });
     renderAudit(audit);
+    setArc(audit.completeness_percent < 60 ? 2 : 3);
     await loadCases();
     await loadDoc();
+    toast(`Audit ${state.caseId}: ${audit.completeness_percent}%`);
   } catch (e) {
-    alert(e.message || e);
+    showError(e);
   } finally {
     $("btn-audit").disabled = false;
   }
@@ -121,7 +172,7 @@ function showError(err) {
   const msg = (err && err.message) || String(err);
   const tip =
     msg.includes("Failed to fetch") || msg.includes("Load failed") || msg.includes("NetworkError")
-      ? "\n\nServer is offline. In Terminal run:\nbash ~/Desktop/Nvidia/project/scripts/start-console.sh"
+      ? "\n\nServer offline. Run: bash ~/Desktop/Nvidia/project/scripts/start-console.sh"
       : "";
   $("doc").textContent = `Error: ${msg}${tip}`;
   $("health").textContent = "offline";
@@ -131,11 +182,14 @@ function showError(err) {
 async function resetDemo() {
   try {
     const audit = await api("/api/demo/reset?case_id=CASE-1042", { method: "POST" });
+    setArc(1);
     await loadCases();
     await selectCase("CASE-1042");
     renderAudit(audit);
+    setArc(2);
     await loadDoc();
     await refreshHealth();
+    toast("Demo reset → incomplete pack");
   } catch (e) {
     showError(e);
   }
@@ -147,11 +201,18 @@ async function injectComplete() {
     await loadCases();
     await selectCase("CASE-1042");
     renderAudit(audit);
+    setArc(3);
     await loadDoc();
     await refreshHealth();
+    toast("Evidence injected · 100% complete");
   } catch (e) {
     showError(e);
   }
+}
+
+async function investigateCase() {
+  const id = state.caseId || "CASE-1042";
+  await sendChat(`Investigate ${id}`);
 }
 
 function addBubble(role, text) {
@@ -161,20 +222,39 @@ function addBubble(role, text) {
   div.textContent = text;
   log.appendChild(div);
   log.scrollTop = log.scrollHeight;
+  return div;
 }
 
 async function sendChat(message) {
   const msg = (message || "").trim();
-  if (!msg) return;
+  if (!msg || state.busy) return;
+  state.busy = true;
+  $("btn-send").classList.add("busy");
+  $("btn-investigate").classList.add("busy");
   addBubble("user", msg);
   $("chat-input").value = "";
+  const thinking = addBubble("thinking", "Model reasoning over case files…");
   try {
     const data = await api("/api/chat", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ message: msg }),
+      timeout: 200000,
     });
+    thinking.remove();
     addBubble("agent", data.reply || "(no reply)");
+    if (data.model_meta) {
+      setArc(4);
+      state.tab = "llm";
+      document.querySelectorAll(".tab").forEach((t) => {
+        t.classList.toggle("active", t.dataset.tab === "llm");
+      });
+      toast(`LLM · ${data.model_meta.provider} / ${data.model_meta.model}`);
+    } else if (msg.toLowerCase().includes("inject")) {
+      setArc(3);
+    } else if (msg.toLowerCase().includes("audit") || msg.toLowerCase().includes("reset")) {
+      setArc(2);
+    }
     if (data.case_id) {
       await loadCases();
       await selectCase(data.case_id);
@@ -183,8 +263,13 @@ async function sendChat(message) {
     }
     await refreshHealth();
   } catch (e) {
+    thinking.remove();
     addBubble("agent", `Error: ${(e && e.message) || e}`);
     showError(e);
+  } finally {
+    state.busy = false;
+    $("btn-send").classList.remove("busy");
+    $("btn-investigate").classList.remove("busy");
   }
 }
 
@@ -193,6 +278,7 @@ function wire() {
   $("btn-audit").onclick = runAudit;
   $("btn-reset").onclick = resetDemo;
   $("btn-inject").onclick = injectComplete;
+  $("btn-investigate").onclick = investigateCase;
   document.querySelectorAll(".tab").forEach((tab) => {
     tab.onclick = () => {
       document.querySelectorAll(".tab").forEach((t) => t.classList.remove("active"));
@@ -211,10 +297,11 @@ function wire() {
 }
 
 wire();
+setArc(1);
 refreshHealth();
 loadCases();
 addBubble(
   "agent",
-  "SupportForge laptop mode ready. No GB10 needed for this demo.\nClick the chips below or type a command."
+  "SupportForge ready.\n1) Reset demo → 2) Audit gaps → 3) Inject evidence → 4) Investigate with model."
 );
-setInterval(refreshHealth, 8000);
+setInterval(refreshHealth, 6000);

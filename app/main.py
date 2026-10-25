@@ -10,11 +10,11 @@ from fastapi.responses import FileResponse, HTMLResponse, PlainTextResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
-from . import agent, engine
+from . import agent, engine, llm
 
 STATIC = Path(__file__).parent / "static"
 
-app = FastAPI(title="SupportForge", version="0.1.0")
+app = FastAPI(title="SupportForge", version="0.2.0")
 
 
 @app.on_event("startup")
@@ -24,18 +24,27 @@ def _startup() -> None:
 
 
 class ChatIn(BaseModel):
-    message: str = Field(min_length=1, max_length=4000)
+    message: str = Field(min_length=1, max_length=8000)
 
 
 @app.get("/api/health")
 def health() -> dict[str, Any]:
+    provider = llm.detect_provider()
     return {
         "ok": True,
         "service": "supportforge",
         "local": True,
         "mode": "laptop",
         "runtime": "macos-local",
+        "version": "0.2.0",
+        "provider": provider,
+        "model_online": provider.get("provider") not in ("none",) and provider.get("status") != "no_models",
     }
+
+
+@app.get("/api/provider")
+def provider() -> dict[str, Any]:
+    return llm.detect_provider()
 
 
 @app.post("/api/chat")
@@ -58,13 +67,28 @@ def case_detail(case_id: str) -> dict[str, Any]:
     files = sorted(
         str(p.relative_to(case)) for p in case.rglob("*") if p.is_file() and p.name != "audit.json"
     )
-    return {"id": case_id, "files": files, "audit": audit}
+    llm_report = engine.OUTBOX / f"{case_id}-llm-report.md"
+    return {
+        "id": case_id,
+        "files": files,
+        "audit": audit,
+        "has_llm_report": llm_report.exists(),
+    }
 
 
 @app.post("/api/cases/{case_id}/audit")
 def run_audit(case_id: str) -> dict[str, Any]:
     try:
         return engine.audit_case(case_id)
+    except FileNotFoundError as e:
+        raise HTTPException(404, str(e)) from e
+
+
+@app.post("/api/cases/{case_id}/investigate")
+def investigate(case_id: str) -> dict[str, Any]:
+    """Run evidence audit + live LLM investigation."""
+    try:
+        return agent.handle_message(f"Investigate {case_id}")
     except FileNotFoundError as e:
         raise HTTPException(404, str(e)) from e
 
@@ -99,6 +123,14 @@ def requests_md(case_id: str) -> PlainTextResponse:
         return PlainTextResponse(engine.read_outbox_file(case_id, "requests"))
     except FileNotFoundError as e:
         raise HTTPException(404, str(e)) from e
+
+
+@app.get("/api/cases/{case_id}/llm-report")
+def llm_report(case_id: str) -> PlainTextResponse:
+    path = engine.OUTBOX / f"{case_id}-llm-report.md"
+    if not path.exists():
+        raise HTTPException(404, "No LLM report yet — run Investigate")
+    return PlainTextResponse(path.read_text())
 
 
 @app.get("/", response_class=HTMLResponse)

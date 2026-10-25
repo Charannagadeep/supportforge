@@ -1,11 +1,11 @@
-"""Laptop-local SupportForge agent (no GB10 / no cloud required)."""
+"""SupportForge agent — deterministic evidence + live LLM investigation."""
 from __future__ import annotations
 
-import os
 import re
+from pathlib import Path
 from typing import Any
 
-from . import engine
+from . import engine, llm
 
 
 def _case_from_text(text: str, default: str | None = "CASE-1042") -> str | None:
@@ -19,64 +19,108 @@ def _case_from_text(text: str, default: str | None = "CASE-1042") -> str | None:
 
 
 def handle_message(message: str) -> dict[str, Any]:
-    """Interpret a user message and run local tools."""
+    """Interpret a user message and run local tools + optional LLM."""
     engine.ensure_layout()
     text = (message or "").strip()
     low = text.lower()
     case_id = _case_from_text(text)
+    provider = llm.detect_provider()
 
-    # Demo choreography
     if any(k in low for k in ("reset demo", "reset case", "start over", "incomplete")):
         audit = engine.reset_demo_case("CASE-1042")
         return _pack(
-            "Reset CASE-1042 to the incomplete pack (serving log only). "
-            f"Completeness is **{audit['completeness_percent']}%**. "
+            "Reset **CASE-1042** to the incomplete pack (serving log only).\n"
+            f"Completeness **{audit['completeness_percent']}%**.\n"
             "Missing: "
             + ", ".join(
                 r["item"] for r in audit["evidence"] if r["required"] and r["status"] != "present"
             )
-            + ". Say **audit CASE-1042** or click Run evidence audit.",
+            + ".\n\nNext: **audit CASE-1042** or **investigate CASE-1042** (LLM).",
             audit,
             "CASE-1042",
+            provider,
         )
 
     if any(k in low for k in ("inject", "add missing", "complete evidence", "new evidence")):
         cid = case_id or "CASE-1042"
         audit = engine.inject_complete_evidence(cid)
-        return _pack(
+        reply = (
             f"Injected missing evidence into **{cid}**. Completeness **{audit['completeness_percent']}%**.\n\n"
             + _hyp_block(audit)
-            + "\nOpen the **Handoff** tab for the full engineering package.",
+        )
+        # Auto-run LLM on complete pack when model is up
+        if provider.get("provider") not in ("none",):
+            try:
+                inv = _investigate(cid, audit)
+                reply = inv["reply"]
+                return _pack(reply, audit, cid, provider, model_meta=inv.get("model_meta"))
+            except Exception as e:  # noqa: BLE001
+                reply += f"\n\n_(LLM investigate deferred: {e})_"
+        return _pack(
+            reply + "\n\nOpen the **Handoff** tab for the engineering package.",
             audit,
             cid,
+            provider,
         )
 
-    if any(k in low for k in ("audit", "triage", "handoff", "investigate", "prepare", "analyze")):
+    if any(k in low for k in ("investigate", "reason", "deep dive", "explain", "summarize")):
+        if not case_id:
+            return {
+                "reply": "Which case? Try: `Investigate CASE-1042`",
+                "audit": None,
+                "case_id": None,
+                "provider": provider,
+            }
+        audit = engine.audit_case(case_id)
+        try:
+            inv = _investigate(case_id, audit)
+            return _pack(inv["reply"], audit, case_id, provider, model_meta=inv.get("model_meta"))
+        except Exception as e:  # noqa: BLE001
+            return _pack(
+                f"**{case_id}** audited (**{audit['completeness_percent']}%**), but LLM failed:\n`{e}`\n\n"
+                + _hyp_block(audit)
+                + "\n\nStart Ollama and ensure a model is pulled, then retry **investigate**.",
+                audit,
+                case_id,
+                provider,
+            )
+
+    if any(k in low for k in ("audit", "triage", "handoff", "prepare", "analyze")):
         if not case_id:
             return {
                 "reply": "Which case? Try: `Audit CASE-1042 and prepare the engineering handoff.`",
                 "audit": None,
                 "case_id": None,
+                "provider": provider,
             }
         audit = engine.audit_case(case_id)
         missing = [
             r["item"] for r in audit["evidence"] if r["required"] and r["status"] != "present"
         ]
+        # Prefer LLM narrative when complete or when user asked for handoff
+        want_llm = "handoff" in low or "prepare" in low or not missing
+        if want_llm and provider.get("provider") not in ("none",):
+            try:
+                inv = _investigate(case_id, audit)
+                return _pack(inv["reply"], audit, case_id, provider, model_meta=inv.get("model_meta"))
+            except Exception:
+                pass
         if missing:
             body = (
                 f"**{case_id}** audited locally.\n"
                 f"- Completeness: **{audit['completeness_percent']}%**\n"
                 f"- Blocking gaps: {', '.join(missing)}\n"
                 f"- Wrote `workspace/outbox/{case_id}-requests.md` and partial handoff.\n\n"
-                "Next: provide the missing files, or say **inject missing evidence** for the demo pack."
+                "Next: **inject missing evidence**, or **investigate CASE-1042** once complete."
             )
         else:
             body = (
                 f"**{case_id}** is complete (**{audit['completeness_percent']}%**).\n\n"
                 + _hyp_block(audit)
-                + f"\nHandoff ready at `workspace/outbox/{case_id}-handoff.md`."
+                + f"\nHandoff ready at `workspace/outbox/{case_id}-handoff.md`.\n"
+                "Say **investigate CASE-1042** for live model reasoning."
             )
-        return _pack(body, audit, case_id)
+        return _pack(body, audit, case_id, provider)
 
     if "list" in low and "case" in low:
         cases = engine.list_cases()
@@ -88,88 +132,148 @@ def handle_message(message: str) -> dict[str, Any]:
             "reply": "Cases on this laptop:\n" + "\n".join(lines),
             "audit": None,
             "case_id": None,
+            "provider": provider,
+        }
+
+    if any(k in low for k in ("model", "provider", "which llm", "status")):
+        return {
+            "reply": _provider_status(provider),
+            "audit": None,
+            "case_id": case_id,
+            "provider": provider,
         }
 
     if any(k in low for k in ("help", "what can you", "how do")):
         return {
             "reply": (
-                "I'm SupportForge running **fully on your laptop** (no GB10 needed for this demo).\n\n"
-                "Try:\n"
+                "I'm **SupportForge** — local evidence audit + live LLM investigation.\n\n"
+                "Demo arc:\n"
                 "1. `Reset demo`\n"
-                "2. `Audit CASE-1042 and prepare the engineering handoff`\n"
+                "2. `Audit CASE-1042` → gaps\n"
                 "3. `Inject missing evidence`\n"
-                "4. `List cases`\n\n"
-                "Private case files never leave this machine."
+                "4. `Investigate CASE-1042` → model writes the handoff narrative\n\n"
+                f"{_provider_status(provider)}\n"
+                "Private case files stay on this machine."
             ),
             "audit": None,
             "case_id": None,
+            "provider": provider,
         }
 
-    # Optional: light cloud assist only if key present AND user asks to "explain"
-    if os.environ.get("ANTHROPIC_API_KEY") and any(k in low for k in ("explain", "summarize in prose")):
-        try:
-            return _claude_wrap(text, case_id)
-        except Exception as e:  # noqa: BLE001
-            return {
-                "reply": f"Local tools only (Claude helper failed: {e}). Try `audit CASE-1042`.",
-                "audit": None,
-                "case_id": case_id,
-            }
+    # Default: treat as investigate if case mentioned, else help
+    if case_id and len(text) > 8:
+        audit = engine.audit_case(case_id)
+        if provider.get("provider") not in ("none",):
+            try:
+                inv = _investigate(case_id, audit, extra_user=text)
+                return _pack(inv["reply"], audit, case_id, provider, model_meta=inv.get("model_meta"))
+            except Exception as e:  # noqa: BLE001
+                return _pack(
+                    f"Audit done; LLM error: `{e}`\n\n" + _hyp_block(audit),
+                    audit,
+                    case_id,
+                    provider,
+                )
 
     return {
         "reply": (
-            "I didn't catch that. On laptop mode, use:\n"
+            "Try:\n"
             "- `Reset demo`\n"
-            "- `Audit CASE-1042 and prepare the engineering handoff`\n"
-            "- `Inject missing evidence`"
+            "- `Audit CASE-1042`\n"
+            "- `Inject missing evidence`\n"
+            "- `Investigate CASE-1042`\n"
+            "- `Model status`"
         ),
         "audit": None,
         "case_id": case_id,
+        "provider": provider,
     }
+
+
+def _file_snippets(case_id: str, audit: dict[str, Any], limit_per: int = 3500) -> dict[str, str]:
+    case = engine.CASES_DIR / case_id
+    out: dict[str, str] = {}
+    paths: list[str] = []
+    for row in audit.get("evidence") or []:
+        paths.extend(row.get("paths") or [])
+    # Always include description if present
+    for extra in ("customer/description.md", "customer/steps-tried.md"):
+        if extra not in paths and (case / extra).exists():
+            paths.append(extra)
+    for rel in paths[:12]:
+        p = case / rel
+        if p.is_file():
+            out[rel] = p.read_text(errors="replace")[:limit_per]
+    return out
+
+
+def _investigate(
+    case_id: str, audit: dict[str, Any], extra_user: str | None = None
+) -> dict[str, Any]:
+    snippets = _file_snippets(case_id, audit)
+    result = llm.investigate_case(case_id, audit, snippets)
+    # Persist LLM narrative into outbox
+    path = engine.OUTBOX / f"{case_id}-llm-report.md"
+    header = (
+        f"# LLM investigation — {case_id}\n\n"
+        f"**Provider:** `{result.provider}` · **Model:** `{result.model}`\n\n"
+        f"_Evidence completeness: {audit.get('completeness_percent')}%_\n\n---\n\n"
+    )
+    if extra_user:
+        header += f"_User ask:_ {extra_user}\n\n"
+    path.write_text(header + result.text + "\n")
+    # Append to handoff if complete
+    handoff = engine.OUTBOX / f"{case_id}-handoff.md"
+    if handoff.exists() and audit.get("completeness_percent", 0) >= 80:
+        existing = handoff.read_text()
+        marker = "## Live model investigation"
+        block = (
+            f"\n{marker}\n\n"
+            f"_Generated by `{result.provider}` / `{result.model}`_\n\n"
+            f"{result.text}\n"
+        )
+        if marker in existing:
+            existing = existing.split(marker)[0].rstrip() + "\n" + block
+        else:
+            existing = existing.rstrip() + "\n" + block
+        handoff.write_text(existing)
+    meta = {"provider": result.provider, "model": result.model, "report_path": str(path)}
+    reply = (
+        f"**Live investigation · {result.provider} / {result.model}**\n"
+        f"Completeness **{audit.get('completeness_percent')}%**\n\n"
+        f"{result.text}"
+    )
+    return {"reply": reply, "model_meta": meta}
+
+
+def _provider_status(provider: dict[str, str]) -> str:
+    p = provider.get("provider", "none")
+    if p == "none":
+        return "Model: **offline** — start Ollama (`open -a Ollama`) and pull `qwen2.5:7b-instruct`."
+    status = provider.get("status")
+    if status == "no_models":
+        return f"Ollama up, but **no models** pulled yet. Pulling `qwen2.5:7b-instruct`…"
+    return f"Model online: **{p}** · `{provider.get('model')}`"
 
 
 def _hyp_block(audit: dict[str, Any]) -> str:
     hyps = audit.get("hypotheses") or []
     if not hyps:
         return ""
-    return "**Hypotheses**\n" + "\n".join(f"{i}. {h}" for i, h in enumerate(hyps, 1))
+    return "**Rule hypotheses**\n" + "\n".join(f"{i}. {h}" for i, h in enumerate(hyps, 1))
 
 
-def _pack(reply: str, audit: dict[str, Any], case_id: str) -> dict[str, Any]:
-    return {"reply": reply, "audit": audit, "case_id": case_id}
-
-
-def _claude_wrap(text: str, case_id: str | None) -> dict[str, Any]:
-    """Optional prose layer — evidence still comes from local engine."""
-    import json
-    import urllib.request
-
-    audit = engine.audit_case(case_id) if case_id else None
-    payload = {
-        "model": "claude-sonnet-4-20250514",
-        "max_tokens": 400,
-        "messages": [
-            {
-                "role": "user",
-                "content": (
-                    "You are SupportForge. Explain this local audit briefly for engineers. "
-                    "Do not invent evidence.\n\n"
-                    f"User asked: {text}\n\nAudit JSON:\n{json.dumps(audit, indent=2)[:6000]}"
-                ),
-            }
-        ],
+def _pack(
+    reply: str,
+    audit: dict[str, Any],
+    case_id: str,
+    provider: dict[str, str] | None = None,
+    model_meta: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    return {
+        "reply": reply,
+        "audit": audit,
+        "case_id": case_id,
+        "provider": provider or llm.detect_provider(),
+        "model_meta": model_meta,
     }
-    req = urllib.request.Request(
-        "https://api.anthropic.com/v1/messages",
-        data=json.dumps(payload).encode(),
-        headers={
-            "content-type": "application/json",
-            "x-api-key": os.environ["ANTHROPIC_API_KEY"],
-            "anthropic-version": "2023-06-01",
-        },
-        method="POST",
-    )
-    with urllib.request.urlopen(req, timeout=60) as resp:
-        data = json.loads(resp.read().decode())
-    reply = data["content"][0]["text"]
-    return {"reply": reply, "audit": audit, "case_id": case_id}

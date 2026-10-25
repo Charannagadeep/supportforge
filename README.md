@@ -97,33 +97,62 @@ You should see status **local · online** (laptop mode).
 
 ---
 
-## 4. Run the 2-minute demo
+## 4. Local LLM (required for the winning demo)
+
+SupportForge audits evidence with a deterministic engine, then runs a **live local model** for the investigation narrative.
+
+```bash
+# Install Ollama (once), then:
+open -a Ollama
+ollama pull qwen2.5:7b-instruct
+```
+
+Health should show `model_online: true`:
+
+```bash
+curl -s http://127.0.0.1:8787/api/health | jq .
+```
+
+| Provider | When |
+|----------|------|
+| **Ollama** (default) | Laptop — auto-detects `qwen2.5:7b-instruct` |
+| **vLLM** `:8000` | GB10 — Qwen3.6-NVFP4 auto-preferred if up |
+| **Anthropic** | Optional — set `ANTHROPIC_API_KEY` |
+
+Override: `SUPPORTFORGE_MODEL`, `SUPPORTFORGE_LLM_BASE`.
+
+---
+
+## 5. Run the 90-second demo
 
 On the page:
 
-1. Click **Reset demo** (or agent chip **Reset demo**)  
-2. Click **Audit CASE-1042** (or **Run evidence audit**) → ~**60%**, missing env + `nvidia-smi`  
-3. Click **Inject missing evidence** → **100%**, hypotheses cite CUDA OOM + `train_scratch.py`  
-4. Open the **Handoff** tab and read citations  
+1. **Reset demo** → incomplete CASE-1042  
+2. **Run evidence audit** → ~**60%**, missing env + `nvidia-smi`  
+3. **Inject evidence** → **100%**, rule layer cites CUDA OOM + `train_scratch.py`  
+4. **Investigate with model** → live LLM report with citations (LLM report tab)  
 
 Agent chat examples:
 
 ```text
 Reset demo
-Audit CASE-1042 and prepare the engineering handoff
+Audit CASE-1042
 Inject missing evidence
-List cases
+Investigate CASE-1042
+Model status
 ```
 
-### CLI demo (no browser)
+### CLI demo
 
 ```bash
 bash scripts/demo-walkthrough.sh
+# with model:
+curl -s -X POST http://127.0.0.1:8787/api/cases/CASE-1042/investigate | jq -r .reply
 ```
 
 ---
 
-## 5. Pitch deck (optional)
+## 6. Pitch deck (optional)
 
 ```bash
 open pitch/index.html        # macOS
@@ -137,8 +166,9 @@ open pitch/index.html        # macOS
 ```text
 supportforge/
   app/                 # FastAPI API + static frontend
-    agent.py           # Laptop agent (chat commands)
+    agent.py           # Agent (audit + LLM investigate)
     engine.py          # Evidence audit / timeline / handoff
+    llm.py             # Ollama / vLLM / Anthropic providers
     main.py            # HTTP routes
     static/            # Frontend (HTML/CSS/JS)
   cases/               # Demo source packs (incomplete + complete)
@@ -158,13 +188,16 @@ supportforge/
 | Method | Path | Purpose |
 |--------|------|---------|
 | GET | `/` | Frontend |
-| GET | `/api/health` | Health check |
+| GET | `/api/health` | Health + model provider |
+| GET | `/api/provider` | Active LLM |
 | GET | `/api/cases` | List cases |
 | POST | `/api/cases/{id}/audit` | Run evidence audit |
+| POST | `/api/cases/{id}/investigate` | Audit + live LLM |
 | POST | `/api/demo/reset` | Reset CASE-1042 incomplete |
 | POST | `/api/demo/inject-complete` | Add missing evidence |
 | POST | `/api/chat` | Agent message `{"message":"..."}` |
 | GET | `/api/cases/{id}/handoff` | Handoff markdown |
+| GET | `/api/cases/{id}/llm-report` | Live model report |
 
 Example:
 
@@ -208,6 +241,8 @@ Copy `skills/` + `workspace/` into the OpenClaw sandbox. Optional Slack/Telegram
 | Port 8787 in use | `lsof -i :8787` then stop the old process, or use `--port 8790` |
 | `uv` / `python` not found | Install Python 3.10+ and/or uv (see Prerequisites) |
 | Blank page | Hard refresh (`Cmd+Shift+R`) · confirm http://127.0.0.1:8787 |
+| `model offline` / `no_models` | `open -a Ollama` then `ollama pull qwen2.5:7b-instruct` |
+| Investigate hangs | First token load can take 30–90s on CPU/Metal — wait |
 
 ---
 

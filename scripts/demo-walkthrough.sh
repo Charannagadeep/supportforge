@@ -1,31 +1,31 @@
 #!/usr/bin/env bash
-# Practice the SupportForge demo on your laptop (no GB10 / no LLM required).
+# Full SupportForge demo: evidence engine + live LLM investigate.
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-LIVE="$ROOT/workspace/cases/CASE-1042"
-COMPLETE="$ROOT/cases/CASE-1042-complete"
-PY="$ROOT/scripts/audit_case.py"
+BASE="${SUPPORTFORGE_URL:-http://127.0.0.1:8787}"
 
-rm -rf "$LIVE"
-mkdir -p "$LIVE"
-rsync -a "$ROOT/cases/CASE-1042/" "$LIVE/"
-mkdir -p "$ROOT/workspace/outbox"
-
-echo "=== STEP 1: Incomplete case ==="
-python3 "$PY" "$LIVE"
-echo
-echo "--- requests ---"
-cat "$ROOT/workspace/outbox/CASE-1042-requests.md"
+echo "=== Health ==="
+curl -sf "$BASE/api/health" | python3 -m json.tool
 echo
 
-echo "=== STEP 2: Add missing evidence ==="
-cp "$COMPLETE/incoming/environment.json" "$LIVE/incoming/"
-cp "$COMPLETE/incoming/nvidia-smi.txt" "$LIVE/incoming/"
+echo "=== STEP 1: Reset incomplete CASE-1042 ==="
+curl -sf -X POST "$BASE/api/demo/reset?case_id=CASE-1042" | python3 -c 'import sys,json; a=json.load(sys.stdin); print("completeness=%s%%" % a["completeness_percent"])'
 
-echo "=== STEP 3: Refresh handoff ==="
-python3 "$PY" "$LIVE"
+echo "=== STEP 2: Inject complete evidence ==="
+curl -sf -X POST "$BASE/api/demo/inject-complete?case_id=CASE-1042" | python3 -c 'import sys,json; a=json.load(sys.stdin); print("completeness=%s%%" % a["completeness_percent"]); print("hyps:");
+[print(" -",h) for h in a.get("hypotheses",[])]'
+
 echo
-echo "--- handoff (tail) ---"
-tail -40 "$ROOT/workspace/outbox/CASE-1042-handoff.md"
+echo "=== STEP 3: Live LLM investigate (may take 30–120s) ==="
+curl -sf -X POST "$BASE/api/cases/CASE-1042/investigate" \
+  -H 'content-type: application/json' | python3 -c '
+import sys, json
+d = json.load(sys.stdin)
+meta = d.get("model_meta") or {}
+print("provider:", meta.get("provider"), meta.get("model"))
+print("--- reply (head) ---")
+print((d.get("reply") or "")[:2500])
+'
 echo
-echo "Demo files ready under $ROOT/workspace/outbox/"
+echo "Full handoff: $BASE/api/cases/CASE-1042/handoff"
+echo "LLM report:   $BASE/api/cases/CASE-1042/llm-report"

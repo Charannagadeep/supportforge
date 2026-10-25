@@ -3,28 +3,41 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>SupportForge — Local Case Investigation</title>
+  <title>SupportForge — Evidence → Model → Handoff</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="/static/styles.css" />
 </head>
 <body>
   <div class="grid-bg"></div>
+  <div class="scan"></div>
   <header class="top">
     <div class="brand">
-      <div class="mark"></div>
+      <div class="mark" aria-hidden="true"></div>
       <div>
         <h1>SupportForge</h1>
-        <p class="tag">Local evidence → engineering handoff · laptop mode</p>
+        <p class="tag">Private case evidence · local LLM investigation · engineering handoff</p>
       </div>
     </div>
     <div class="top-actions">
       <span id="health" class="pill">…</span>
+      <span id="model-pill" class="pill model">model …</span>
       <button id="btn-reset" class="btn ghost">Reset demo</button>
-      <button id="btn-inject" class="btn primary">Inject missing evidence</button>
+      <button id="btn-inject" class="btn ghost">Inject evidence</button>
+      <button id="btn-investigate" class="btn primary">Investigate with model</button>
     </div>
   </header>
+
+  <section class="arc">
+    <div class="arc-step" data-step="1"><span>01</span> Incomplete pack</div>
+    <div class="arc-line"></div>
+    <div class="arc-step" data-step="2"><span>02</span> Evidence gaps</div>
+    <div class="arc-line"></div>
+    <div class="arc-step" data-step="3"><span>03</span> Inject complete</div>
+    <div class="arc-line"></div>
+    <div class="arc-step" data-step="4"><span>04</span> Live LLM handoff</div>
+  </section>
 
   <main class="layout">
     <aside class="panel cases">
@@ -34,12 +47,12 @@
       </div>
       <ul id="case-list"></ul>
       <div class="demo-hint">
-        <strong>Demo arc</strong>
+        <strong>90-second pitch</strong>
         <ol>
-          <li>Select CASE-1042</li>
-          <li>Run audit → see gaps</li>
-          <li>Inject evidence</li>
-          <li>Read handoff citations</li>
+          <li>Reset → incomplete CASE-1042</li>
+          <li>Audit → blocking gaps + customer asks</li>
+          <li>Inject → GPU OOM + zombie process</li>
+          <li>Investigate → local model cites evidence</li>
         </ol>
       </div>
     </aside>
@@ -51,16 +64,16 @@
       </div>
       <div id="meter" class="meter hidden">
         <div class="meter-bar"><span id="meter-fill"></span></div>
-        <div class="meter-meta"><span id="meter-pct">0%</span> completeness</div>
+        <div class="meter-meta"><span id="meter-pct">0%</span> completeness · <span id="event-count">0</span> timeline events</div>
       </div>
       <div id="evidence" class="empty">No audit yet.</div>
       <div class="split">
         <div>
-          <h3>Hypotheses</h3>
+          <h3>Rule hypotheses</h3>
           <ol id="hypotheses" class="mono"></ol>
         </div>
         <div>
-          <h3>Files</h3>
+          <h3>Files on disk</h3>
           <ul id="files" class="mono files"></ul>
         </div>
       </div>
@@ -69,36 +82,39 @@
     <section class="panel docs">
       <div class="tabs">
         <button class="tab active" data-tab="handoff">Handoff</button>
+        <button class="tab" data-tab="llm">LLM report</button>
         <button class="tab" data-tab="requests">Requests</button>
         <button class="tab" data-tab="timeline">Timeline</button>
       </div>
-      <pre id="doc" class="doc">Run an audit to generate the engineering package.</pre>
+      <pre id="doc" class="doc">Run Investigate to generate a live model report grounded in case files.</pre>
     </section>
   </main>
 
   <section class="panel chat-panel">
     <div class="panel-h">
       <h2>Agent</h2>
-      <span class="tag">Runs on this Mac · no cloud required for demo</span>
+      <span class="tag" id="agent-tag">Waiting for local model…</span>
     </div>
     <div id="chat-log" class="chat-log"></div>
     <form id="chat-form" class="chat-form">
       <input id="chat-input" type="text" autocomplete="off"
-        placeholder="Audit CASE-1042 and prepare the engineering handoff" />
-      <button class="btn primary" type="submit">Send</button>
+        placeholder="Investigate CASE-1042 — why did serving OOM?" />
+      <button class="btn primary" type="submit" id="btn-send">Send</button>
     </form>
     <div class="chips">
       <button type="button" class="chip" data-msg="Reset demo">Reset demo</button>
-      <button type="button" class="chip" data-msg="Audit CASE-1042 and prepare the engineering handoff">Audit CASE-1042</button>
+      <button type="button" class="chip" data-msg="Audit CASE-1042">Audit</button>
       <button type="button" class="chip" data-msg="Inject missing evidence">Inject evidence</button>
-      <button type="button" class="chip" data-msg="List cases">List cases</button>
+      <button type="button" class="chip" data-msg="Investigate CASE-1042">Investigate with LLM</button>
+      <button type="button" class="chip" data-msg="Model status">Model status</button>
     </div>
   </section>
 
   <footer class="foot">
-    <span>Laptop demo now · NemoClaw/OpenClaw/OpenShell when GB10 available</span>
-    <span>Dell × NVIDIA hackathon</span>
+    <span>Laptop now · swap to GB10 vLLM (Qwen3.6-NVFP4) without changing the console</span>
+    <span>Dell × NVIDIA · NemoClaw / OpenClaw / OpenShell ready</span>
   </footer>
+  <div id="toast" class="toast hidden"></div>
   <script src="/static/app.js"></script>
 </body>
 </html>
