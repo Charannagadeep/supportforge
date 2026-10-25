@@ -20,14 +20,7 @@ Dell × NVIDIA hackathon · laptop demo now · **NemoClaw + OpenClaw + OpenShell
 | praveen-sud | Collaborator |
 | jaswanthkrishnaakula | Collaborator |
 
-Suggested task split (pick one and open a PR):
-
-1. **Console / UI** — polish `app/static/`, demo UX  
-2. **Evidence engine** — `app/engine.py`, checklists, runbooks  
-3. **Agent chat** — `app/agent.py`, prompts, chips  
-4. **Demo cases** — `cases/CASE-*`, realism, second scenarios  
-5. **Pitch / video / submission** — `pitch/`, `demo/SCRIPT.md`, `SUBMISSION.md`  
-6. **GB10 / NemoClaw** — `scripts/sunday-setup.sh`, `skills/`, channels  
+**Assigned tasks for everyone:** see [`TASKS.md`](TASKS.md) (branch names + done criteria).
 
 ---
 
