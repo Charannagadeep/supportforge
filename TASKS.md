@@ -42,7 +42,7 @@ Branch: `lead/submission`
 
 ### 2) shivanisam — Frontend / console UX
 **Own:** `app/static/`  
-**Goal:** Make the demo UI clearer and more judge-friendly  
+**Goal:** Make the demo UI clearer and clearer for demos  
 
 Do:
 - Improve empty states (Requests / Handoff before audit)  
@@ -113,7 +113,7 @@ Do:
 - Tighten pitch slides in `pitch/index.html` (problem → solution → demo → ask)  
 - Finalize 2-minute video script with exact UI clicks  
 - Complete `SUBMISSION.md` (problem, solution, why local, metrics)  
-- Add a one-page “judge crib sheet” `demo/JUDGE-NOTES.md`  
+- Add a one-page “demo crib sheet” `demo/DEMO-NOTES.md`  
 
 **Done when:** Someone can record the video from the script alone  
 Branch: `praveen-sud/pitch-submission`  

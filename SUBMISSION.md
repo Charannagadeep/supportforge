@@ -37,9 +37,8 @@ https://github.com/Charannagadeep/supportforge/blob/main/pitch/index.html
 
 ## Demo video URL
 
-https://github.com/Charannagadeep/supportforge/releases/download/hackathon-demo/SupportForge-Demo-2min.mp4
-
-_(Also in-repo: `demo/video/SupportForge-Demo-2min.mp4` — **1:58**, under the 2-minute limit.)_
+Upload the local ≤2 min walkthrough separately (Desktop: `SupportForge-Demo-2min.mp4`) to Drive / YouTube / similar, then paste that public link here.  
+**Do not host the demo video on this GitHub repo.**
 
 ---
 
@@ -94,7 +93,7 @@ We did **not** use cloud LLMs for the scored runtime.
 
 ---
 
-## Extra answers judges often ask (if your form has more of the 17 fields)
+## Extra answers (if the form has more of the 17 fields)
 
 **Problem**  
 Support tickets for NVIDIA GPU servers arrive incomplete. Engineers cannot start until environment, `nvidia-smi`, logs, and a failure timeline exist.
@@ -120,7 +119,7 @@ Shell/GPU-reset style tool use is denied; path sandbox; secret redaction; `works
 Charannagadeep (lead) · shivanisam · vini104 · Anshi-12 · JadaSange · praveen-sud · jaswanthkrishnaakula — see `TASKS.md`.
 
 **Demo script (≤2 min)**  
-Website walkthrough with cursor + voice: Reset → Audit → Inject → Investigate → Eval → Security deny → NVIDIA corpus. Video file above.
+Website walkthrough with cursor + voice: Reset → Audit → Inject → Investigate → Eval → Security deny → NVIDIA corpus. Host the MP4 outside GitHub.
 
 ---
 
@@ -130,7 +129,7 @@ Website walkthrough with cursor + voice: Reset → Audit → Inject → Investig
 |------|------------|
 | Repo | https://github.com/Charannagadeep/supportforge |
 | Pitch | https://github.com/Charannagadeep/supportforge/blob/main/pitch/index.html |
-| Demo video | https://github.com/Charannagadeep/supportforge/releases/download/hackathon-demo/SupportForge-Demo-2min.mp4 |
+| Demo video | External host only (not this repo) |
 | Security | `SECURITY.md` |
 | Benchmark | `BENCHMARK.md` |
 | GB10 bring-up | `scripts/gb10-bringup.sh` |

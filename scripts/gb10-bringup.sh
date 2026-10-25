@@ -7,7 +7,7 @@
 #   2) Ensures OpenShell 0.0.116 + NemoClaw Express path
 #   3) Installs SupportForge skills + live cases into sandbox `supportforge`
 #   4) Starts the scored console on :8787 (LAN-bind + API key for shared box)
-#   5) Prints the judge demo checklist
+#   5) Prints the GB10 demo checklist
 set -euo pipefail
 
 SANDBOX="${1:-supportforge}"
@@ -134,7 +134,7 @@ PY
 print_demo() {
   cat <<EOF
 
-======== JUDGE DEMO (GB10) ========
+======== GB10 DEMO CHECKLIST ========
 1. Console shows mode=gb10 · vLLM · Qwen3.6-35B-A3B-NVFP4
 2. CASE-1042 → Reset → Audit (~60%) → Inject → Investigate (live 35B)
 3. Run live LLM eval → pass rate / avg score

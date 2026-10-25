@@ -1,6 +1,6 @@
 # SupportForge benchmark methodology
 
-Laptop-only evaluation. No GB10 required. Designed so judges can reproduce scores in Cursor.
+Laptop-only evaluation. No GB10 required. Designed so scores are reproducible in Cursor.
 
 ## Dataset
 

@@ -279,7 +279,7 @@ Paste-ready answers: **[`SUBMISSION.md`](SUBMISSION.md)**
 | Pitch | [`pitch/index.html`](pitch/index.html) |
 | Write-up | [`SUBMISSION.md`](SUBMISSION.md) |
 
-Deadlines (PT): GB10 return **5:30** · submit **6:00** · deck **7:00** if Top 8
+Demo video is kept local (not in this repo). Host it separately for the form (Drive / YouTube / etc.).
 
 ---
 

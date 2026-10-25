@@ -14,13 +14,7 @@ workspace/memory/*
 dist/
 build/
 
-# Recording / TTS intermediates — keep final ≤2min demo only
-demo/video/live/raw/
-demo/video/live/audio/
-demo/video/live/SupportForge-Website-Demo.mp4
-demo/video/live/__pycache__/
-demo/video/audio/
-demo/video/build/
-demo/video/frames/
-demo/video/SupportForge-Judge-Demo.mp4
-!demo/video/SupportForge-Demo-2min.mp4
+# Local recording / demo video — not published to GitHub
+demo/video/
+*.mp4
+!pitch/

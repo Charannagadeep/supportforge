@@ -143,7 +143,7 @@ def list_issues(
                 "is_user_report": is_user,
             }
         )
-    # Highest incomplete evidence first — judges see 50–67%, not a wall of 0%s
+    # Highest incomplete evidence first — show 50–67% incomplete reports, not a wall of 0%s
     out.sort(key=lambda x: (-x["evidence_pct"], x["title"] or ""))
     return out[:limit]
 

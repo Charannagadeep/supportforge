@@ -90,7 +90,7 @@ def _gb10_pack() -> dict[str, Any]:
 
 
 def _runtime_mode(provider: dict[str, Any] | None = None) -> tuple[str, str]:
-    """Return (mode, runtime_label) for health / judge UI."""
+    """Return (mode, runtime_label) for health / console UI."""
     forced = os.getenv("SUPPORTFORGE_RUNTIME", "").strip().lower()
     info = provider if provider is not None else llm.detect_provider()
     if forced in ("gb10", "spark", "dgx"):
@@ -99,7 +99,7 @@ def _runtime_mode(provider: dict[str, Any] | None = None) -> tuple[str, str]:
         return "gb10", "dell-gb10"
     if os.path.exists("/etc/nvidia-container-runtime/config.toml") or os.path.exists("/dev/nvidia0"):
         return "gb10", "dell-gb10"
-    # USB / local GB10 weight pack present → judge-facing GB10 mode
+    # USB / local GB10 weight pack present → GB10 mode when USB pack is present
     if _gb10_pack().get("ready"):
         return "gb10", "dell-gb10"
     return "laptop", "macos-local"
