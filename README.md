@@ -143,7 +143,7 @@ Override: `SUPPORTFORGE_MODEL`, `SUPPORTFORGE_LLM_BASE`.
 ## 5. Pitch deck
 
 Public slides (Google Drive):  
-https://docs.google.com/presentation/d/1sG1W3k0peXW89u2PXFHas8LDYpcyqtiX/edit?usp=sharing
+https://docs.google.com/presentation/d/1Fgwp8xg50VLVt0UCP-l7R1PE8D8N2mpKb32s_1jpSX8/edit?usp=sharing
 
 Local HTML backup: `pitch/index.html`
 
@@ -276,7 +276,7 @@ Paste-ready answers: **[`SUBMISSION.md`](SUBMISSION.md)**
 | Field | Value |
 |-------|--------|
 | Repo | https://github.com/Charannagadeep/supportforge |
-| Pitch | [Google Slides](https://docs.google.com/presentation/d/1sG1W3k0peXW89u2PXFHas8LDYpcyqtiX/edit?usp=sharing) |
+| Pitch | [Google Slides](https://docs.google.com/presentation/d/1Fgwp8xg50VLVt0UCP-l7R1PE8D8N2mpKb32s_1jpSX8/edit?usp=sharing) |
 | Write-up | [`SUBMISSION.md`](SUBMISSION.md) |
 
 Demo video is kept local (not in this repo). Host it separately for the form (Drive / YouTube / etc.).

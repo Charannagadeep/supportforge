@@ -30,7 +30,7 @@ https://github.com/Charannagadeep/supportforge
 
 ## Pitch deck
 
-https://docs.google.com/presentation/d/1sG1W3k0peXW89u2PXFHas8LDYpcyqtiX/edit?usp=sharing
+https://docs.google.com/presentation/d/1Fgwp8xg50VLVt0UCP-l7R1PE8D8N2mpKb32s_1jpSX8/edit?usp=sharing
 
 ---
 
@@ -127,7 +127,7 @@ Website walkthrough with cursor + voice: Reset → Audit → Inject → Investig
 | Item | URL / path |
 |------|------------|
 | Repo | https://github.com/Charannagadeep/supportforge |
-| Pitch | https://docs.google.com/presentation/d/1sG1W3k0peXW89u2PXFHas8LDYpcyqtiX/edit?usp=sharing |
+| Pitch | https://docs.google.com/presentation/d/1Fgwp8xg50VLVt0UCP-l7R1PE8D8N2mpKb32s_1jpSX8/edit?usp=sharing |
 | Demo video | External host only (not this repo) |
 | Security | `SECURITY.md` |
 | Benchmark | `BENCHMARK.md` |
