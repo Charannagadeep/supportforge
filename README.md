@@ -140,12 +140,12 @@ Override: `SUPPORTFORGE_MODEL`, `SUPPORTFORGE_LLM_BASE`.
 
 ---
 
-## 5. Pitch deck (optional)
+## 5. Pitch deck
 
-```bash
-open pitch/index.html        # macOS
-# or open the file in any browser
-```
+Public slides (Google Drive):  
+https://docs.google.com/presentation/d/1sG1W3k0peXW89u2PXFHas8LDYpcyqtiX/edit?usp=sharing
+
+Local HTML backup: `pitch/index.html`
 
 ---
 
@@ -276,7 +276,7 @@ Paste-ready answers: **[`SUBMISSION.md`](SUBMISSION.md)**
 | Field | Value |
 |-------|--------|
 | Repo | https://github.com/Charannagadeep/supportforge |
-| Pitch | [`pitch/index.html`](pitch/index.html) |
+| Pitch | [Google Slides](https://docs.google.com/presentation/d/1sG1W3k0peXW89u2PXFHas8LDYpcyqtiX/edit?usp=sharing) |
 | Write-up | [`SUBMISSION.md`](SUBMISSION.md) |
 
 Demo video is kept local (not in this repo). Host it separately for the form (Drive / YouTube / etc.).

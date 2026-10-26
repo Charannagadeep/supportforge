@@ -17,4 +17,6 @@ build/
 # Local recording / demo video — not published to GitHub
 demo/video/
 *.mp4
-!pitch/
+*.pptx
+!pitch/README.md
+!pitch/index.html
