@@ -8,19 +8,26 @@ Dell × NVIDIA hackathon · **GB10-winning path** (Qwen3.6-35B NVFP4 + OpenShell
 
 ---
 
-## Team
+## Contributors
 
-| GitHub | Role |
-|--------|------|
-| Charannagadeep | Lead / repo |
-| shivanisam | Collaborator |
-| vini104 | Collaborator |
-| Anshi-12 | Collaborator |
-| JadaSange | Collaborator |
-| praveen-sud | Collaborator |
-| jaswanthkrishnaakula | Collaborator |
+### Code contributions (from git history)
 
-**Assigned tasks for everyone:** see [`TASKS.md`](TASKS.md) (branch names + done criteria).
+| Contributor | What they built |
+|-------------|-----------------|
+| [@Charannagadeep](https://github.com/Charannagadeep) (lead) | Core SupportForge agent and console, evidence engine, live local LLM investigation (Ollama / vLLM), case lab with 5 golden cases and eval harness, NVIDIA Container Toolkit corpus, GB10 / OpenShell / NemoClaw bring-up scripts, integration and merges, submission write-up |
+| [@shivanisam](https://github.com/shivanisam) | Application security controls: `app/security.py`, API-key auth, host allow-list, path sandbox, tool denials, secret redaction, security audit log, hardened console startup scripts |
+| [@vini104](https://github.com/vini104) (Sai Vineetha) | Always-on case watcher (`app/watcher.py`): auto re-audit when case files change, de-duplicated notices, restart-safe state, tests in `tests/test_watcher.py` |
+| [@JadaSange](https://github.com/JadaSange) | Frontend styling for the console (`app/static/styles.css`) |
+
+### Team members
+
+| Contributor | Assigned area |
+|-------------|---------------|
+| [@Anshi-12](https://github.com/Anshi-12) | Agent chat commands (`app/agent.py`) |
+| [@praveen-sud](https://github.com/praveen-sud) | Pitch deck, video script, submission write-up |
+| [@jaswanthkrishnaakula](https://github.com/jaswanthkrishnaakula) | GB10 / NemoClaw integration path (`scripts/sunday-setup.sh`, `skills/`, `CHANNELS.md`) |
+
+Per-person task breakdown: [`TASKS.md`](TASKS.md).
 
 ---
 
